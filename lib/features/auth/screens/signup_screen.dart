@@ -419,63 +419,63 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // 11. 약관 전체동의
-    Widget _buildTermsAgreement() {
-      return Container(
-        // 1. 전체 박스 스타일 (로그인 입력창 스타일)
-        height: 200, // 박스 전체 높이 (텍스트 + 체크박스)
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: const Color(0xFFD9D9D9),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            // 2. 약관 내용 (스크롤 가능 영역)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0), // 하단 패딩 0
-                child: SingleChildScrollView(
-                  child: Text(
-                    "약관 내용 삽입\n\n" * 20, // 임시 텍스트
-                    style: const TextStyle(fontSize: 14, color: Colors.black54),
-                  ),
+  // 11. 약관 전체동의 (변경됨 - 체크박스를 박스 안으로)
+  Widget _buildTermsAgreement() {
+    return Container(
+      // 1. 전체 박스 스타일 (로그인 입력창 스타일)
+      height: 200, // 박스 전체 높이 (텍스트 + 체크박스)
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFFD9D9D9),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          // 2. 약관 내용 (스크롤 가능 영역)
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0), // 하단 패딩 0
+              child: SingleChildScrollView(
+                child: Text(
+                  "약관 내용 삽입\n\n" * 20, // 임시 텍스트
+                  style: const TextStyle(fontSize: 14, color: Colors.black54),
                 ),
               ),
             ),
+          ),
 
-            // 구분선
-            const Divider(color: Colors.black26, height: 1, indent: 16, endIndent: 16),
+          // 구분선 (선택 사항이지만, 시각적으로 좋습니다)
+          const Divider(color: Colors.black26, height: 1, indent: 16, endIndent: 16),
 
-            // 3. 약관 동의 체크박스 (박스 하단 고정)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Checkbox(
-                  value: _agreeToTerms,
-                  onChanged: (bool? value) {
-                    setState(() {
-                      _agreeToTerms = value ?? false;
-                    });
-                  },
+          // 3. 약관 동의 체크박스 (박스 하단 고정)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Checkbox(
+                value: _agreeToTerms,
+                onChanged: (bool? value) {
+                  setState(() {
+                    _agreeToTerms = value ?? false;
+                  });
+                },
+              ),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _agreeToTerms = !_agreeToTerms;
+                  });
+                },
+                child: const Text(
+                  "약관 전체동의",
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                 ),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _agreeToTerms = !_agreeToTerms;
-                    });
-                  },
-                  child: const Text(
-                    "약관 전체동의",
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   // 가입하기 버튼
   Widget _buildSubmitButton() {
