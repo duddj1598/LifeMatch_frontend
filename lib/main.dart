@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+<<<<<<< Updated upstream
 import 'package:http/http.dart' as http;
 import 'dart:io'; // SocketException 사용을 위해 필요
 import 'dart:async'; // TimeoutException 사용을 위해 필요
+=======
+import 'features/auth/screens/login_screen.dart';
+import 'features/auth/screens/signup_screen.dart';
+>>>>>>> Stashed changes
 
 // 서버 연결 상태를 나타내는 열거형
 enum ConnectionStatus {
@@ -22,6 +27,7 @@ class LocalServerCheckerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+<<<<<<< Updated upstream
       title: '로컬 백엔드 연결 확인',
       theme: ThemeData(
         primarySwatch: Colors.indigo,
@@ -316,6 +322,11 @@ class GuidancePoint extends StatelessWidget {
           ),
         ],
       ),
+=======
+      title: 'LifeMatch',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: const SignUpScreen(),
+>>>>>>> Stashed changes
     );
   }
 }
