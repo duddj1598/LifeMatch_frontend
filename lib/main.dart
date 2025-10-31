@@ -14,7 +14,14 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'LifeMatch',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const SignUpScreen(),
+
+      // ✅ 앱 시작 시 LoginScreen으로 이동
+      home: const LoginScreen(),
+
+      // ✅ 네비게이션 라우트 등록
+      routes: {
+        '/signup': (context) => const SignUpScreen(),
+      },
     );
   }
 }
