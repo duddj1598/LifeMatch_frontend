@@ -13,7 +13,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  // --- 오류 메시지 초기값을 null로 변경 ---
+  // --- 오류 메시지 초기값 ---
   String? _idError;
   String? _passwordError;
   String? _confirmPasswordError;
@@ -23,9 +23,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
     '가장 기억에 남는 추억의 장소는?',
     '자신의 보물 제1호는?',
     '가장 좋아하는 반려동물의 이름은?',
+    '직접 질문 입력',
   ];
 
   bool _agreeToTerms = false;
+
+  // 👁️ 비밀번호 표시 상태 변수 추가
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   // --- 컨트롤러 메모리 해제 ---
   @override
@@ -52,20 +57,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
-  // --- 로그인 화면 스타일과 일치하는 InputDecoration 정의 ---
-  InputDecoration _buildInputDecoration(String hintText, {Widget? prefixIcon, String? errorText, Color? errorBorderColor}) {
-    // 기본 에러 보더 (빨간색)
+  // --- 공통 InputDecoration 정의 ---
+  InputDecoration _buildInputDecoration(String hintText,
+      {Widget? prefixIcon,
+        String? errorText,
+        Color? errorBorderColor}) {
     var errorBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
       borderSide: const BorderSide(color: Colors.red, width: 2.0),
     );
-    // 포커스된 에러 보더
     var focusedErrorBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
       borderSide: const BorderSide(color: Colors.red, width: 2.0),
     );
 
-    // 특별 케이스 (파란색 에러 보더)
     if (errorBorderColor != null) {
       errorBorder = OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -100,9 +105,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       focusedErrorBorder: focusedErrorBorder,
     );
   }
-  // --- 스타일 정의 끝 ---
 
-
+  // --- 본문 빌드 ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -114,7 +118,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 1. 회원가입 제목 (로그인 타이틀 스타일 적용)
                 const Text(
                   "회원가입",
                   style: TextStyle(
@@ -126,56 +129,45 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                // 2. 아이디
                 _buildLabel("아이디"),
                 _buildIdField(),
                 const SizedBox(height: 16),
 
-                // 3. 비밀번호
                 _buildLabel("비밀번호"),
                 _buildPasswordField(),
                 const SizedBox(height: 16),
 
-                // 4. 비밀번호 확인
                 _buildLabel("비밀번호 확인"),
                 _buildPasswordConfirmField(),
                 const SizedBox(height: 16),
 
-                // 5. 닉네임
                 _buildLabel("닉네임"),
                 _buildNicknameField(),
                 const SizedBox(height: 16),
 
-                // 6. 주소
                 _buildLabel("주소"),
                 _buildAddressField(),
                 const SizedBox(height: 16),
 
-                // 7. 이메일 주소
                 _buildLabel("이메일 주소"),
                 _buildEmailField(),
                 const SizedBox(height: 16),
 
-                // 8. 생년월일
                 _buildLabel("생년월일"),
                 _buildBirthdateField(),
                 const SizedBox(height: 16),
 
-                // 9. 본인 확인 질문
                 _buildLabel("본인 확인 질문"),
                 _buildSecurityQuestionField(),
                 const SizedBox(height: 16),
 
-                // 10. 본인 확인 답변
                 _buildLabel("본인 확인 답변"),
                 _buildSecurityAnswerField(),
                 const SizedBox(height: 16),
 
-                // 11. 약관 전체동의 (변경됨)
                 _buildTermsAgreement(),
                 const SizedBox(height: 32),
 
-                // 12. 가입하기 버튼
                 _buildSubmitButton(),
               ],
             ),
@@ -185,9 +177,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // --- 위젯 빌드 함수들 ---
-
-  // 공통 라벨 위젯
+  // --- 공통 라벨 ---
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
@@ -198,7 +188,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // 아이디 입력 필드
+  // --- 아이디 입력 필드 ---
   Widget _buildIdField() {
     return Row(
       children: [
@@ -246,11 +236,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // 비밀번호 입력 필드
+  // --- 비밀번호 입력 필드 👁️ 눈 아이콘 추가 ---
   Widget _buildPasswordField() {
     return TextField(
       controller: _passwordController,
-      obscureText: true,
+      obscureText: _obscurePassword,
       onChanged: (password) {
         setState(() {
           if (password.isEmpty) {
@@ -267,15 +257,29 @@ class _SignUpScreenState extends State<SignUpScreen> {
         "비밀번호 입력 (문자, 숫자, 특수문자 포함 8~20자)",
         prefixIcon: const Icon(Icons.lock_outline),
         errorText: _passwordError,
+      ).copyWith(
+        suffixIcon: IconButton(
+          icon: Icon(
+            _obscurePassword
+                ? Icons.visibility_off
+                : Icons.visibility,
+            color: const Color(0xFF6B7AA1),
+          ),
+          onPressed: () {
+            setState(() {
+              _obscurePassword = !_obscurePassword;
+            });
+          },
+        ),
       ),
     );
   }
 
-  // 비밀번호 확인 필드
+  // --- 비밀번호 확인 필드 👁️ 눈 아이콘 추가 ---
   Widget _buildPasswordConfirmField() {
     return TextField(
       controller: _confirmPasswordController,
-      obscureText: true,
+      obscureText: _obscureConfirmPassword,
       onChanged: (value) {
         _validateConfirmPassword();
       },
@@ -284,21 +288,32 @@ class _SignUpScreenState extends State<SignUpScreen> {
         prefixIcon: const Icon(Icons.lock_outline),
         errorText: _confirmPasswordError,
         errorBorderColor: _confirmPasswordError != null ? Colors.blue : null,
+      ).copyWith(
+        suffixIcon: IconButton(
+          icon: Icon(
+            _obscureConfirmPassword
+                ? Icons.visibility_off
+                : Icons.visibility,
+            color: const Color(0xFF6B7AA1),
+          ),
+          onPressed: () {
+            setState(() {
+              _obscureConfirmPassword = !_obscureConfirmPassword;
+            });
+          },
+        ),
       ),
     );
   }
 
-  // 닉네임 입력 필드
-  Widget _buildNicknameField() {
-    return TextField(
-      decoration: _buildInputDecoration(
-        "닉네임을 입력해주세요",
-        prefixIcon: const Icon(Icons.badge_outlined),
-      ),
-    );
-  }
+  // --- 나머지 필드들은 그대로 유지 ---
+  Widget _buildNicknameField() => TextField(
+    decoration: _buildInputDecoration(
+      "닉네임을 입력해주세요",
+      prefixIcon: const Icon(Icons.badge_outlined),
+    ),
+  );
 
-  // 주소 입력 필드
   Widget _buildAddressField() {
     return Row(
       children: [
@@ -328,7 +343,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // 이메일 입력 필드
   Widget _buildEmailField() {
     return Row(
       children: [
@@ -346,16 +360,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         Expanded(
           child: TextField(
-            decoration: _buildInputDecoration(
-              "도메인",
-            ),
+            decoration: _buildInputDecoration("도메인"),
           ),
         ),
       ],
     );
   }
 
-  // 생년월일 입력 필드
   Widget _buildBirthdateField() {
     return Row(
       children: [
@@ -386,7 +397,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // 본인 확인 질문 필드 (드롭다운)
   Widget _buildSecurityQuestionField() {
     return DropdownButtonFormField<String>(
       value: _selectedQuestion,
@@ -409,7 +419,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // 본인 확인 답변 필드
   Widget _buildSecurityAnswerField() {
     return TextField(
       decoration: _buildInputDecoration(
@@ -419,11 +428,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // 11. 약관 전체동의 (변경됨 - 체크박스를 박스 안으로)
   Widget _buildTermsAgreement() {
     return Container(
-      // 1. 전체 박스 스타일 (로그인 입력창 스타일)
-      height: 200, // 박스 전체 높이 (텍스트 + 체크박스)
+      height: 200,
       width: double.infinity,
       decoration: BoxDecoration(
         color: const Color(0xFFD9D9D9),
@@ -431,23 +438,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ),
       child: Column(
         children: [
-          // 2. 약관 내용 (스크롤 가능 영역)
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0), // 하단 패딩 0
+              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
               child: SingleChildScrollView(
                 child: Text(
-                  "약관 내용 삽입\n\n" * 20, // 임시 텍스트
+                  "약관 내용 삽입\n\n" * 20,
                   style: const TextStyle(fontSize: 14, color: Colors.black54),
                 ),
               ),
             ),
           ),
-
-          // 구분선 (선택 사항이지만, 시각적으로 좋습니다)
           const Divider(color: Colors.black26, height: 1, indent: 16, endIndent: 16),
-
-          // 3. 약관 동의 체크박스 (박스 하단 고정)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -477,13 +479,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // 가입하기 버튼
   Widget _buildSubmitButton() {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
         onPressed: () {
-          // 회원가입 로직
+          // 회원가입 로직 유지
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF9AA8DA),
@@ -494,10 +495,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
         child: const Text(
           "가입하기",
-          style: TextStyle(
-            fontSize: 23,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontSize: 23, color: Colors.white),
         ),
       ),
     );

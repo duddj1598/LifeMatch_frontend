@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  bool _obscurePassword = true; // 🔒 비밀번호 표시 상태 관리 변수
+
+  @override
   Widget build(BuildContext context) {
-    // 배경색 설정
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
       body: Center(
@@ -20,7 +24,7 @@ class LoginScreen extends StatelessWidget {
               Column(
                 children: [
                   Image.asset(
-                    'assets/images/lifematch_logo.png', // 로고 이미지 경로
+                    'assets/images/lifematch_logo.png',
                     width: 100,
                     height: 100,
                   ),
@@ -57,9 +61,9 @@ class LoginScreen extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // 비밀번호 입력창
+              // 🔒 비밀번호 입력창 + 눈 아이콘 추가
               TextField(
-                obscureText: true,
+                obscureText: _obscurePassword,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.lock_outline),
                   hintText: '비밀번호',
@@ -68,6 +72,19 @@ class LoginScreen extends StatelessWidget {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: const Color(0xFF6B7AA1),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
                   ),
                 ),
               ),
@@ -88,20 +105,20 @@ class LoginScreen extends StatelessWidget {
                   ),
                   child: const Text(
                     '로그인',
-                    style: TextStyle(
-                        fontSize: 23,
-                        color: Colors.white),
+                    style: TextStyle(fontSize: 23, color: Colors.white),
                   ),
                 ),
               ),
 
               const SizedBox(height: 10),
 
-              // 회원가입 버튼
+              // 회원가입 버튼 → SignUpScreen으로 이동
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/signup');
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF9AA8DA),
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -111,10 +128,7 @@ class LoginScreen extends StatelessWidget {
                   ),
                   child: const Text(
                     '회원가입',
-                    style: TextStyle(
-                      fontSize: 23,
-                      color: Colors.white,
-                    ),
+                    style: TextStyle(fontSize: 23, color: Colors.white),
                   ),
                 ),
               ),
@@ -124,15 +138,12 @@ class LoginScreen extends StatelessWidget {
               // 아이디/비밀번호 찾기
               const Text(
                 '아이디찾기 / 비밀번호 찾기',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.black,
-                ),
+                style: TextStyle(fontSize: 13, color: Colors.black),
               ),
 
               const SizedBox(height: 30),
 
-              // 카카오 로그인 버튼 (이미지 제거)
+              // 카카오 로그인 버튼
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -153,7 +164,7 @@ class LoginScreen extends StatelessWidget {
 
               const SizedBox(height: 10),
 
-              // Google 로그인 버튼 (이미지 제거)
+              // Google 로그인 버튼
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
