@@ -13,6 +13,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  // ✅ 1. '직접 질문 입력' TextField를 위한 컨트롤러 추가
+  final _directQuestionController = TextEditingController();
+
   // --- 오류 메시지 초기값 ---
   String? _idError;
   String? _passwordError;
@@ -28,9 +31,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   bool _agreeToTerms = false;
 
-  // 👁️ 비밀번호 표시 상태 변수 추가
+  // 👁️ 비밀번호 표시 상태 변수
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+
+  // ✅ 2. '직접 질문 입력' 상태를 추적하는 변수 추가
+  bool _isDirectQuestion = false;
 
   // --- 컨트롤러 메모리 해제 ---
   @override
@@ -38,6 +44,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _idController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _directQuestionController.dispose(); // ✅ 3. 직접 질문 컨트롤러 메모리 해제
     super.dispose();
   }
 
@@ -158,7 +165,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 const SizedBox(height: 16),
 
                 _buildLabel("본인 확인 질문"),
-                _buildSecurityQuestionField(),
+                _buildSecurityQuestionField(), // ✅ 4. 이 함수가 수정됨
                 const SizedBox(height: 16),
 
                 _buildLabel("본인 확인 답변"),
@@ -236,7 +243,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // --- 비밀번호 입력 필드 👁️ 눈 아이콘 추가 ---
+  // --- 비밀번호 입력 필드 ---
   Widget _buildPasswordField() {
     return TextField(
       controller: _passwordController,
@@ -275,7 +282,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // --- 비밀번호 확인 필드 👁️ 눈 아이콘 추가 ---
+  // --- 비밀번호 확인 필드 ---
   Widget _buildPasswordConfirmField() {
     return TextField(
       controller: _confirmPasswordController,
@@ -306,7 +313,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // --- 나머지 필드들은 그대로 유지 ---
+  // --- 닉네임 필드 ---
   Widget _buildNicknameField() => TextField(
     decoration: _buildInputDecoration(
       "닉네임을 입력해주세요",
@@ -314,6 +321,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     ),
   );
 
+  // --- 주소 필드 ---
   Widget _buildAddressField() {
     return Row(
       children: [
@@ -343,6 +351,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
+  // --- 이메일 필드 ---
   Widget _buildEmailField() {
     return Row(
       children: [
@@ -367,6 +376,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
+  // --- 생년월일 필드 ---
   Widget _buildBirthdateField() {
     return Row(
       children: [
@@ -397,28 +407,62 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
+  // --- ✅ 5. 본인 확인 질문 필드 (로직 수정됨) ---
   Widget _buildSecurityQuestionField() {
-    return DropdownButtonFormField<String>(
-      value: _selectedQuestion,
-      hint: const Text("질문을 선택해주세요."),
-      decoration: _buildInputDecoration(
-        "",
-        prefixIcon: const Icon(Icons.quiz_outlined),
-      ),
-      items: _questions.map((String question) {
-        return DropdownMenuItem<String>(
-          value: question,
-          child: Text(question),
-        );
-      }).toList(),
-      onChanged: (newValue) {
-        setState(() {
-          _selectedQuestion = newValue;
-        });
-      },
-    );
+    // _isDirectQuestion 값에 따라 다른 위젯을 반환합니다.
+    if (_isDirectQuestion) {
+      // --- '직접 질문 입력' TextField ---
+      return TextField(
+        controller: _directQuestionController, // 직접 질문 컨트롤러
+        decoration: _buildInputDecoration(
+          "직접 질문 입력", // 요청한 힌트 텍스트
+          prefixIcon: const Icon(Icons.edit_note_outlined), // 다른 아이콘
+        ).copyWith(
+          // '드롭다운으로 돌아가기' 버튼
+          suffixIcon: IconButton(
+            icon: const Icon(Icons.arrow_drop_down_circle_outlined, color: Color(0xFF6B7AA1)),
+            tooltip: "질문 선택으로 돌아가기",
+            onPressed: () {
+              setState(() {
+                _isDirectQuestion = false;
+                _directQuestionController.clear(); // 텍스트 필드 내용 초기화
+              });
+            },
+          ),
+        ),
+      );
+    } else {
+      // --- 기존 '질문 선택' Dropdown ---
+      return DropdownButtonFormField<String>(
+        value: _selectedQuestion,
+        hint: const Text("질문을 선택해주세요."),
+        decoration: _buildInputDecoration(
+          "",
+          prefixIcon: const Icon(Icons.quiz_outlined),
+        ),
+        items: _questions.map((String question) {
+          return DropdownMenuItem<String>(
+            value: question,
+            child: Text(question),
+          );
+        }).toList(),
+        onChanged: (newValue) {
+          setState(() {
+            // '직접 질문 입력'을 선택했는지 확인
+            if (newValue == "직접 질문 입력") {
+              _isDirectQuestion = true;
+              _selectedQuestion = null; // 드롭다운 선택값은 비움
+            } else {
+              _isDirectQuestion = false; // (이미 false겠지만 명시적)
+              _selectedQuestion = newValue;
+            }
+          });
+        },
+      );
+    }
   }
 
+  // --- 본인 확인 답변 필드 ---
   Widget _buildSecurityAnswerField() {
     return TextField(
       decoration: _buildInputDecoration(
@@ -428,6 +472,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
+  // --- 약관 동의 ---
   Widget _buildTermsAgreement() {
     return Container(
       height: 200,
@@ -479,6 +524,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
+  // --- 가입하기 버튼 ---
   Widget _buildSubmitButton() {
     return SizedBox(
       width: double.infinity,
