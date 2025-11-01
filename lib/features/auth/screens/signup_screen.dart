@@ -530,7 +530,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       width: double.infinity,
       child: ElevatedButton(
         onPressed: () {
-          // 회원가입 로직
+          // 회원가입 로직 유지
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF9AA8DA),
