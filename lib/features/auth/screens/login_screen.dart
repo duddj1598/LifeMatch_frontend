@@ -8,7 +8,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  bool _obscurePassword = true; // 🔒 비밀번호 표시 상태 관리 변수
+  bool _obscurePassword = true;
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 16),
 
-              // 🔒 비밀번호 입력창 + 눈 아이콘 추가
+              // 비밀번호 입력창
               TextField(
                 obscureText: _obscurePassword,
                 decoration: InputDecoration(
@@ -112,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 10),
 
-              // 회원가입 버튼 → SignUpScreen으로 이동
+              // 회원가입 버튼
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -135,10 +135,30 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 16),
 
-              // 아이디/비밀번호 찾기
-              const Text(
-                '아이디찾기 / 비밀번호 찾기',
-                style: TextStyle(fontSize: 13, color: Colors.black),
+              // 🟣 아이디 / 비밀번호 찾기 (클릭 이동 추가)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/find_id');
+                    },
+                    child: const Text(
+                      '아이디 찾기',
+                      style: TextStyle(fontSize: 13, color: Colors.black),
+                    ),
+                  ),
+                  const Text('|', style: TextStyle(color: Colors.black)),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/find_pw');
+                    },
+                    child: const Text(
+                      '비밀번호 찾기',
+                      style: TextStyle(fontSize: 13, color: Colors.black),
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 30),

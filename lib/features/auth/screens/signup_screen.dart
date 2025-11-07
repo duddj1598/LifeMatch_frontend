@@ -8,15 +8,13 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-  // --- 컨트롤러 추가 ---
+  // --- 컨트롤러 ---
   final _idController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-
-  // ✅ 1. '직접 질문 입력' TextField를 위한 컨트롤러 추가
   final _directQuestionController = TextEditingController();
 
-  // --- 오류 메시지 초기값 ---
+  // --- 상태 변수 ---
   String? _idError;
   String? _passwordError;
   String? _confirmPasswordError;
@@ -30,65 +28,36 @@ class _SignUpScreenState extends State<SignUpScreen> {
   ];
 
   bool _agreeToTerms = false;
-
-  // 👁️ 비밀번호 표시 상태 변수
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-
-  // ✅ 2. '직접 질문 입력' 상태를 추적하는 변수 추가
   bool _isDirectQuestion = false;
 
-  // --- 컨트롤러 메모리 해제 ---
+  // --- 메모리 해제 ---
   @override
   void dispose() {
     _idController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _directQuestionController.dispose(); // ✅ 3. 직접 질문 컨트롤러 메모리 해제
+    _directQuestionController.dispose();
     super.dispose();
   }
 
-  // --- 비밀번호 일치 검사 로직 ---
+  // --- 비밀번호 확인 로직 ---
   void _validateConfirmPassword() {
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
-    if (confirmPassword.isNotEmpty && password != confirmPassword) {
-      setState(() {
-        _confirmPasswordError = "비밀번호가 일치하지 않습니다";
-      });
-    } else {
-      setState(() {
-        _confirmPasswordError = null;
-      });
-    }
+    setState(() {
+      _confirmPasswordError =
+      (confirmPassword.isNotEmpty && password != confirmPassword)
+          ? "비밀번호가 일치하지 않습니다"
+          : null;
+    });
   }
 
-  // --- 공통 InputDecoration 정의 ---
+  // --- 입력 필드 공통 데코레이션 ---
   InputDecoration _buildInputDecoration(String hintText,
-      {Widget? prefixIcon,
-        String? errorText,
-        Color? errorBorderColor}) {
-    var errorBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: Colors.red, width: 2.0),
-    );
-    var focusedErrorBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: Colors.red, width: 2.0),
-    );
-
-    if (errorBorderColor != null) {
-      errorBorder = OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: errorBorderColor, width: 2.0),
-      );
-      focusedErrorBorder = OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: errorBorderColor, width: 2.0),
-      );
-    }
-
+      {Widget? prefixIcon, String? errorText, Color? errorBorderColor}) {
     return InputDecoration(
       hintText: hintText,
       prefixIcon: prefixIcon,
@@ -98,43 +67,50 @@ class _SignUpScreenState extends State<SignUpScreen> {
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
       errorText: errorText,
       errorStyle: const TextStyle(color: Colors.red, height: 0.9),
-      errorBorder: errorBorder,
-      focusedErrorBorder: focusedErrorBorder,
     );
   }
 
-  // --- 본문 빌드 ---
+  // --- UI 빌드 ---
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F7),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
+    return WillPopScope(
+      // 🔹 시스템 뒤로가기 버튼 처리
+      onWillPop: () async {
+        Navigator.pushReplacementNamed(context, '/login');
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF7F7F7),
+
+        // 🔹 상단 AppBar 추가
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: () {
+              Navigator.pushReplacementNamed(context, '/login');
+            },
+          ),
+          title: const Text(
+            "회원가입",
+            style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          centerTitle: true,
+        ),
+
+        body: SafeArea(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
-                  "회원가입",
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF6B7AA1),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 8),
 
                 _buildLabel("아이디"),
                 _buildIdField(),
@@ -165,7 +141,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 const SizedBox(height: 16),
 
                 _buildLabel("본인 확인 질문"),
-                _buildSecurityQuestionField(), // ✅ 4. 이 함수가 수정됨
+                _buildSecurityQuestionField(),
                 const SizedBox(height: 16),
 
                 _buildLabel("본인 확인 답변"),
@@ -184,18 +160,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // --- 공통 라벨 ---
-  Widget _buildLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
+  // --- Label ---
+  Widget _buildLabel(String text) => Padding(
+    padding: const EdgeInsets.only(bottom: 8.0),
+    child: Text(
+      text,
+      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+    ),
+  );
 
-  // --- 아이디 입력 필드 ---
+  // --- 아이디 ---
   Widget _buildIdField() {
     return Row(
       children: [
@@ -233,9 +207,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
             backgroundColor: const Color(0xFFB0BEC5),
             foregroundColor: Colors.black,
             elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child: const Text("중복 확인"),
         ),
@@ -243,7 +216,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // --- 비밀번호 입력 필드 ---
+  // --- 비밀번호 ---
   Widget _buildPasswordField() {
     return TextField(
       controller: _passwordController,
@@ -267,9 +240,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ).copyWith(
         suffixIcon: IconButton(
           icon: Icon(
-            _obscurePassword
-                ? Icons.visibility_off
-                : Icons.visibility,
+            _obscurePassword ? Icons.visibility_off : Icons.visibility,
             color: const Color(0xFF6B7AA1),
           ),
           onPressed: () {
@@ -282,25 +253,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // --- 비밀번호 확인 필드 ---
+  // --- 비밀번호 확인 ---
   Widget _buildPasswordConfirmField() {
     return TextField(
       controller: _confirmPasswordController,
       obscureText: _obscureConfirmPassword,
-      onChanged: (value) {
-        _validateConfirmPassword();
-      },
+      onChanged: (_) => _validateConfirmPassword(),
       decoration: _buildInputDecoration(
         "비밀번호 재입력",
         prefixIcon: const Icon(Icons.lock_outline),
         errorText: _confirmPasswordError,
-        errorBorderColor: _confirmPasswordError != null ? Colors.blue : null,
       ).copyWith(
         suffixIcon: IconButton(
           icon: Icon(
-            _obscureConfirmPassword
-                ? Icons.visibility_off
-                : Icons.visibility,
+            _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
             color: const Color(0xFF6B7AA1),
           ),
           onPressed: () {
@@ -313,7 +279,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // --- 닉네임 필드 ---
+  // --- 닉네임 ---
   Widget _buildNicknameField() => TextField(
     decoration: _buildInputDecoration(
       "닉네임을 입력해주세요",
@@ -321,7 +287,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     ),
   );
 
-  // --- 주소 필드 ---
+  // --- 주소 ---
   Widget _buildAddressField() {
     return Row(
       children: [
@@ -341,9 +307,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
             backgroundColor: const Color(0xFF9AA8DA),
             foregroundColor: Colors.white,
             elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child: const Text("주소 검색"),
         ),
@@ -351,7 +316,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // --- 이메일 필드 ---
+  // --- 이메일 ---
   Widget _buildEmailField() {
     return Row(
       children: [
@@ -376,7 +341,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // --- 생년월일 필드 ---
+  // --- 생년월일 ---
   Widget _buildBirthdateField() {
     return Row(
       children: [
@@ -407,32 +372,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // --- ✅ 5. 본인 확인 질문 필드 (로직 수정됨) ---
+  // --- 본인 확인 질문 ---
   Widget _buildSecurityQuestionField() {
-    // _isDirectQuestion 값에 따라 다른 위젯을 반환합니다.
     if (_isDirectQuestion) {
-      // --- '직접 질문 입력' TextField ---
       return TextField(
-        controller: _directQuestionController, // 직접 질문 컨트롤러
+        controller: _directQuestionController,
         decoration: _buildInputDecoration(
-          "직접 질문 입력", // 요청한 힌트 텍스트
-          prefixIcon: const Icon(Icons.edit_note_outlined), // 다른 아이콘
+          "직접 질문 입력",
+          prefixIcon: const Icon(Icons.edit_note_outlined),
         ).copyWith(
-          // '드롭다운으로 돌아가기' 버튼
           suffixIcon: IconButton(
-            icon: const Icon(Icons.arrow_drop_down_circle_outlined, color: Color(0xFF6B7AA1)),
-            tooltip: "질문 선택으로 돌아가기",
+            icon: const Icon(Icons.arrow_drop_down_circle_outlined,
+                color: Color(0xFF6B7AA1)),
             onPressed: () {
               setState(() {
                 _isDirectQuestion = false;
-                _directQuestionController.clear(); // 텍스트 필드 내용 초기화
+                _directQuestionController.clear();
               });
             },
           ),
         ),
       );
     } else {
-      // --- 기존 '질문 선택' Dropdown ---
       return DropdownButtonFormField<String>(
         value: _selectedQuestion,
         hint: const Text("질문을 선택해주세요."),
@@ -448,12 +409,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
         }).toList(),
         onChanged: (newValue) {
           setState(() {
-            // '직접 질문 입력'을 선택했는지 확인
             if (newValue == "직접 질문 입력") {
               _isDirectQuestion = true;
-              _selectedQuestion = null; // 드롭다운 선택값은 비움
+              _selectedQuestion = null;
             } else {
-              _isDirectQuestion = false; // (이미 false겠지만 명시적)
+              _isDirectQuestion = false;
               _selectedQuestion = newValue;
             }
           });
@@ -462,7 +422,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
-  // --- 본인 확인 답변 필드 ---
+  // --- 본인 확인 답변 ---
   Widget _buildSecurityAnswerField() {
     return TextField(
       decoration: _buildInputDecoration(
@@ -488,7 +448,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
               child: SingleChildScrollView(
                 child: Text(
-                  "약관 내용 삽입\n\n" * 20,
+                  "약관 내용 삽입\n\n" * 10,
                   style: const TextStyle(fontSize: 14, color: Colors.black54),
                 ),
               ),
@@ -530,14 +490,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
       width: double.infinity,
       child: ElevatedButton(
         onPressed: () {
-          // 회원가입 로직 유지
+          // TODO: 회원가입 로직 추가
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF9AA8DA),
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         child: const Text(
           "가입하기",
