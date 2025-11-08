@@ -26,7 +26,7 @@ class _DropdownMenuExampleState extends State<DropdownMenuExample> {
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: DropdownButtonFormField<String>(
-        value: selectedQuestion,
+        initialValue: selectedQuestion,
         decoration: InputDecoration(
           labelText: widget.label,
           border: InputBorder.none,

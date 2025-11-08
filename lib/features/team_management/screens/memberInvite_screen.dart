@@ -27,7 +27,6 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
 
   final TextEditingController _searchController = TextEditingController();
 
-  // ✅ 1. 새 멤버의 번호를 추적하기 위한 카운터 변수를 추가합니다.
   int _newMemberCounter = 1;
 
   @override

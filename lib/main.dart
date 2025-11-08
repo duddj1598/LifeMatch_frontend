@@ -1,13 +1,23 @@
+//패키지 임포트
 import 'package:flutter/material.dart';
-import 'package:lifematch_frontend/features/team_management/screens/team_detail_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:lifematch_frontend/features/auth/viewmodels/auth_viewmodel.dart';
+//화면 임포트
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/signup_screen.dart';
-import 'features/auth/screens/memberInvite_screen.dart';
 import 'features/auth/screens/find_id_screen.dart';
 import 'features/auth/screens/find_pw_screen.dart';
 
+//테스트 임포트
+import 'features/team_management/screens/team_detail_screen.dart';
+
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => AuthViewModel(), // AuthViewModel 생성
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -20,7 +30,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.blue),
 
       // ✅ 앱이 시작할 때 바로 이동할 첫 화면
-      initialRoute: '/login',
+      initialRoute: '/team_detail',
 
       // ✅ 네비게이션 라우트 등록
       routes: {
@@ -28,6 +38,9 @@ class MyApp extends StatelessWidget {
         '/signup': (context) => const SignUpScreen(),
         '/find_id': (context) => const FindIdScreen(),
         '/find_pw': (context) => const FindPwScreen(),
+        //'home': (context) => const HomeScreen(),
+
+        '/team_detail': (context) => const TeamDetailScreen(),
       },
 
     );

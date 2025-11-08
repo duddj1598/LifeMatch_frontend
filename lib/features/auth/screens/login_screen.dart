@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-
+import 'package:provider/provider.dart';
+import 'package:lifematch_frontend/features/auth/viewmodels/auth_viewmodel.dart';
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -9,9 +10,50 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleLogin() async {
+    final viewModel = Provider.of<AuthViewModel>(context, listen: false);
+
+    if (viewModel.isLoading) return;
+
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("이메일과 비밀번호를 입력해주세요.")),
+      );
+      return;
+    }
+
+    final bool success = await viewModel.login(
+      _emailController.text,
+      _passwordController.text,
+    );
+
+    if (!mounted) return;
+
+    if (success) {
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(viewModel.errorMessage ?? "로그인 실패"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = context.watch<AuthViewModel>().isLoading;
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
       body: Center(
@@ -47,9 +89,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // 아이디 입력창
               TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.person_outline),
-                  hintText: '아이디',
+                  hintText: '아이디(이메일)',
                   filled: true,
                   fillColor: const Color(0xFFD9D9D9),
                   border: OutlineInputBorder(
@@ -63,6 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // 비밀번호 입력창
               TextField(
+                controller: _passwordController,
                 obscureText: _obscurePassword,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.lock_outline),
@@ -95,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: isLoading ? null : _handleLogin,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF9AA8DA),
                     padding: const EdgeInsets.symmetric(vertical: 14),
