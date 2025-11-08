@@ -22,7 +22,7 @@ class AuthViewModel extends ChangeNotifier {
   // 5. 상태 변경 헬퍼: 상태를 변경하고 UI에 알림 (notifyListeners)
   void _setLoading(bool loading) {
     _isLoading = loading;
-    notifyListeners(); // ⭐️ 이 함수가 호출되면 UI가 새로고침됩니다.
+    notifyListeners(); //이 함수가 호출되면 UI가 새로고침
   }
 
   void _setError(String? message) {
@@ -34,7 +34,7 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  // --- 6. 회원가입 로직 (UI가 호출할 함수) ---
+  // --- 회원가입 로직 (UI가 호출할 함수) ---
   Future<bool> signup({
     required String email,
     required String nickname,
@@ -44,7 +44,7 @@ class AuthViewModel extends ChangeNotifier {
     _setError(null);   // 2. 이전 에러 메시지 초기화
 
     try {
-      // 3. 실제 API 로직(서비스) 호출
+      // 실제 API 로직(서비스) 호출
       await _authService.signup(
         email: email,
         nickname: nickname,
@@ -55,7 +55,7 @@ class AuthViewModel extends ChangeNotifier {
       return true; // ⭐️ UI에 "성공" 알림
 
     } catch (e) {
-      // 5. 실패 시
+      // 실패 시
       // e.toString()이 "Exception: 이미 사용 중인 이메일입니다." 처럼
       // "Exception: "을 포함하므로, 이를 제거하고 에러 메시지 저장
       _setError(e.toString().replaceFirst("Exception: ", ""));
@@ -63,16 +63,16 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  // --- 7. (임시) 로그인 로직 (나중에 사용) ---
+  // --- (임시) 로그인 로직 (나중에 사용) ---
   Future<bool> login(String email, String password) async {
     _setLoading(true);
     _setError(null);
 
     try {
-      // 1. 서비스 호출 (로그인)
+      // 서비스 호출 (로그인)
       final tokenData = await _authService.login(email, password);
 
-      // 2. 토큰 저장 (스토리지 서비스)
+      // 토큰 저장 (스토리지 서비스)
       await _storageService.saveTokens(
         accessToken: tokenData.accessToken,
         refreshToken: tokenData.refreshToken,
