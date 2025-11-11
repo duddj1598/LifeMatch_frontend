@@ -40,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      Navigator.pushReplacementNamed(context, '/style_test');
+      Navigator.pushReplacementNamed(context, '/style_test');//홈 라우트로 바꿔야 함. 유형검사 테스트를 위해 바꿔놓음
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
