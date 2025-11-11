@@ -73,23 +73,20 @@ class AuthViewModel extends ChangeNotifier {
     _setErrorMessage(null); // ⭐️ 오타 확인: _setErrorMessage
 
     try {
-      // ⭐️ 1. email 변수명을 id로 사용 (서비스 로직과 동일하게)
       final Map<String, dynamic> responseData =
       await _authService.login(email, password);
 
-      // ⭐️ 2. 백엔드 응답에서 accessToken을 직접 추출
       final String? accessToken = responseData['accessToken'];
 
       if (accessToken != null) {
-        // ⭐️ 3. 토큰만 StorageService에 저장
+        // ⭐️ 1. 토큰 저장
         await _storageService.saveToken(accessToken);
-
-        // ⭐️ 4. (중요) refreshToken은 없으므로 저장하지 않음
-        // (UserInfo도 없으므로 저장하지 않음)
+        // ⭐️ 2. (필수) user_id (로그인 시 사용한 email) 저장
+        await _storageService.saveUserId(email);
 
         _setLoading(false);
         return true;
-      } else {
+      }else {
         _setErrorMessage("로그인에 실패했습니다. (토큰 없음)"); // ⭐️ 오타 확인
         _setLoading(false);
         return false;

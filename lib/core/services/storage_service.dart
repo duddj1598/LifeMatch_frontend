@@ -6,6 +6,7 @@ class StorageService {
 
   // 2. ⭐️ 토큰을 저장할 때 사용할 키(key)
   static const String _tokenKey = 'access_token';
+  static const String _userIdKey = 'user_id';
 
   // --- 👇 3. (오류 해결) 'saveToken' 함수 ---
   /// (로그인 성공 시) 토큰을 기기에 저장합니다.
@@ -39,5 +40,20 @@ class StorageService {
       print("토큰 삭제 실패: $e");
       // (오류 처리)
     }
+  }
+
+  /// (로그인 성공 시) user_id (이메일/닉네임)를 저장합니다.
+  Future<void> saveUserId(String userId) async {
+    await _storage.write(key: _userIdKey, value: userId);
+  }
+
+  /// 저장된 user_id를 불러옵니다.
+  Future<String?> getUserId() async {
+    return await _storage.read(key: _userIdKey);
+  }
+
+  /// (로그아웃 시) 저장된 user_id를 삭제합니다.
+  Future<void> deleteUserId() async {
+    await _storage.delete(key: _userIdKey);
   }
 }
