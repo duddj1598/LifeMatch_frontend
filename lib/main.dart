@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.blue),
 
       // ✅ 앱이 시작할 때 바로 이동할 첫 화면
-      initialRoute: '/style_test',
+      initialRoute: '/login',
 
       // ✅ 네비게이션 라우트 등록
       routes: {
