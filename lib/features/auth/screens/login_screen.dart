@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:lifematch_frontend/features/auth/viewmodels/auth_viewmodel.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -20,14 +21,17 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // ✅ 로그인 로직
   Future<void> _handleLogin() async {
-    final viewModel = Provider.of<AuthViewModel>(context, listen: false);
-
+    final viewModel = context.read<AuthViewModel>();
     if (viewModel.isLoading) return;
 
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("이메일과 비밀번호를 입력해주세요.")),
+        const SnackBar(content: Text("이메일과 비밀번호를 모두 입력해주세요.")),
       );
       return;
     }
@@ -40,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      Navigator.pushReplacementNamed(context, '/style_test');//홈 라우트로 바꿔야 함. 유형검사 테스트를 위해 바꿔놓음
+      Navigator.pushReplacementNamed(context, '/style_test'); // 홈 라우트로 바꿔야 함. 유형검사 테스트를 위해 바꿔놓음
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -54,8 +58,10 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final isLoading = context.watch<AuthViewModel>().isLoading;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
+      resizeToAvoidBottomInset: true, // ✅ 키보드 올라올 때 화면 밀림 방지
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
@@ -87,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 40),
 
-              // 아이디 입력창
+              // 이메일 입력창
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
@@ -136,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 20),
 
-              // 로그인 버튼
+              // ✅ 로그인 버튼
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -148,7 +154,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
+                  child: isLoading
+                      ? const CircularProgressIndicator(
+                    color: Colors.white,
+                  )
+                      : const Text(
                     '로그인',
                     style: TextStyle(fontSize: 23, color: Colors.white),
                   ),
@@ -180,73 +190,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 16),
 
-              // 🟣 아이디 / 비밀번호 찾기 (클릭 이동 추가)
+              // 아이디 / 비밀번호 찾기
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/find_id');
-                    },
-                    child: const Text(
-                      '아이디 찾기',
-                      style: TextStyle(fontSize: 13, color: Colors.black),
-                    ),
+                    onPressed: () => Navigator.pushNamed(context, '/find_id'),
+                    child: const Text('아이디 찾기',
+                        style: TextStyle(fontSize: 13, color: Colors.black)),
                   ),
                   const Text('|', style: TextStyle(color: Colors.black)),
                   TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/find_pw');
-                    },
-                    child: const Text(
-                      '비밀번호 찾기',
-                      style: TextStyle(fontSize: 13, color: Colors.black),
-                    ),
+                    onPressed: () => Navigator.pushNamed(context, '/find_pw'),
+                    child: const Text('비밀번호 찾기',
+                        style: TextStyle(fontSize: 13, color: Colors.black)),
                   ),
                 ],
-              ),
-
-              const SizedBox(height: 30),
-
-              // 카카오 로그인 버튼
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFEB3B),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Text(
-                    '카카오톡 로그인',
-                    style: TextStyle(color: Colors.black, fontSize: 15),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              // Google 로그인 버튼
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () {},
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: const BorderSide(color: Color(0xFFDDDDDD)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    backgroundColor: Colors.white,
-                  ),
-                  child: const Text(
-                    'Google 로그인',
-                    style: TextStyle(color: Colors.black, fontSize: 15),
-                  ),
-                ),
               ),
             ],
           ),
