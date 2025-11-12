@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 // 1. 의존하는 서비스들을 임포트
 import 'package:lifematch_frontend/features/auth/services/auth_service.dart';
 import 'package:lifematch_frontend/core/services/storage_service.dart';
+import 'package:jwt_decode/jwt_decode.dart';
 
 // 2. 'ChangeNotifier'를 상속(extends)하여 ViewModel을 만듭니다.
 class AuthViewModel extends ChangeNotifier {
@@ -70,7 +71,7 @@ class AuthViewModel extends ChangeNotifier {
   // --- (임시) 로그인 로직 (나중에 사용) ---
   Future<bool> login(String email, String password) async {
     _setLoading(true);
-    _setErrorMessage(null); // ⭐️ 오타 확인: _setErrorMessage
+    _setErrorMessage(null);
 
     try {
       final Map<String, dynamic> responseData =
@@ -79,21 +80,36 @@ class AuthViewModel extends ChangeNotifier {
       final String? accessToken = responseData['accessToken'];
 
       if (accessToken != null) {
-        // ⭐️ 1. 토큰 저장
+        String? nickname;
+        try {
+          // 1. 토큰에서 닉네임 추출
+          Map<String, dynamic> payload = Jwt.parseJwt(accessToken);
+          nickname = payload['nickname'];
+        } catch (e) {
+          print("JWT 디코딩 오류: $e");
+          nickname = null;
+        }
+
+        // 2. 토큰 및 ID 저장
         await _storageService.saveToken(accessToken);
-        // ⭐️ 2. (필수) user_id (로그인 시 사용한 email) 저장
         await _storageService.saveUserId(email);
+
+        // 3. ⭐️ (수정) 닉네임이 정상적으로 있을 때만 저장
+        if (nickname != null && nickname.isNotEmpty) {
+          await _storageService.saveNickname(nickname);
+        }
+        // ⭐️ (else 블록을 아예 삭제함)
 
         _setLoading(false);
         return true;
-      }else {
-        _setErrorMessage("로그인에 실패했습니다. (토큰 없음)"); // ⭐️ 오타 확인
+      } else {
+        _setErrorMessage("로그인에 실패했습니다. (토큰 없음)");
         _setLoading(false);
         return false;
       }
 
     } catch (e) {
-      _setErrorMessage(e.toString()); // ⭐️ 오타 확인
+      _setErrorMessage(e.toString());
       _setLoading(false);
       return false;
     }

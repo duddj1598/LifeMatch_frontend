@@ -181,15 +181,16 @@ class _LifestyleTestScreenState extends State<LifestyleTestScreen> {
 
           // ⭐️ 8-3. 닉네임 대신 userId를 팝업에 사용 (임시)
           // (나중에 닉네임도 Storage에 저장해서 사용하세요)
+          final String? nickname = await _storageService.getNickname();
           final String tempNickname = userId;
-
-          showLifestyleLoadingPopup(context, tempNickname);
+          final String displayName = (nickname != null && nickname.isNotEmpty) ? nickname : userId;
+          showLifestyleLoadingPopup(context, displayName);
 
           try {
             // ⭐️ 8-4. (API 호출) 선택된 optionId 리스트를 서비스로 전달
             final List<int> selectedOptionIds = _answers.values.toList();
             final LifestyleTestResultDetail result =
-            await _testService.submitTest(userId, selectedOptionIds);
+              await _testService.submitTest(userId, selectedOptionIds);
 
             // ⭐️ (나중에 3초 지연은 삭제)
             await Future.delayed(const Duration(seconds: 3));
@@ -199,7 +200,7 @@ class _LifestyleTestScreenState extends State<LifestyleTestScreen> {
 
             // ⭐️ 8-5. (API 결과 전달)
             // (lifestyle_result_screen.dart가 LifestyleTestResultDetail을 받도록 수정해야 함)
-            showLifestyleResultPopup(context, tempNickname, result);
+            showLifestyleResultPopup(context, displayName, result);
 
           } catch (e) {
             if (!mounted) return;
