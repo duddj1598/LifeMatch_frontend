@@ -61,29 +61,41 @@ class AuthViewModel extends ChangeNotifier {
       _setError(e.toString().replaceFirst("Exception: ", ""));
       return false; // ⭐️ UI에 "실패" 알림
     }
-  }
 
+  }
+  void _setErrorMessage(String? message) {
+    _errorMessage = message;
+    notifyListeners();
+  }
   // --- (임시) 로그인 로직 (나중에 사용) ---
   Future<bool> login(String email, String password) async {
     _setLoading(true);
-    _setError(null);
+    _setErrorMessage(null); // ⭐️ 오타 확인: _setErrorMessage
 
     try {
-      // 서비스 호출 (로그인)
-      final tokenData = await _authService.login(email, password);
+      final Map<String, dynamic> responseData =
+      await _authService.login(email, password);
 
-      // 토큰 저장 (스토리지 서비스)
-      await _storageService.saveTokens(
-        accessToken: tokenData.accessToken,
-        refreshToken: tokenData.refreshToken,
-      );
+      final String? accessToken = responseData['accessToken'];
 
-      _setLoading(false);
-      return true; // 성공
+      if (accessToken != null) {
+        // ⭐️ 1. 토큰 저장
+        await _storageService.saveToken(accessToken);
+        // ⭐️ 2. (필수) user_id (로그인 시 사용한 email) 저장
+        await _storageService.saveUserId(email);
+
+        _setLoading(false);
+        return true;
+      }else {
+        _setErrorMessage("로그인에 실패했습니다. (토큰 없음)"); // ⭐️ 오타 확인
+        _setLoading(false);
+        return false;
+      }
 
     } catch (e) {
-      _setError(e.toString().replaceFirst("Exception: ", ""));
-      return false; // 실패
+      _setErrorMessage(e.toString()); // ⭐️ 오타 확인
+      _setLoading(false);
+      return false;
     }
   }
 }

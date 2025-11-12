@@ -1,57 +1,57 @@
 import 'package:flutter/material.dart';
+// ⭐️ 1. 결과 모델 임포트
+import 'package:lifematch_frontend/features/lifestyle_test/models/lifestyle_test_model.dart';
 
-// ⭐️ 1. (새로 추가) 팝업을 띄우는 함수
-void showLifestyleResultPopup(BuildContext context, String nickname) {
+// ⭐️ 2. (수정) 팝업 함수가 닉네임과 'result' 객체를 받도록 변경
+void showLifestyleResultPopup(BuildContext context, String nickname, LifestyleTestResultDetail result) {
   showDialog(
     context: context,
-    // (선택사항) 밖을 눌러도 닫히지 않게 하려면 true 대신 false 사용
     barrierDismissible: true,
     builder: (BuildContext context) {
-      // ⭐️ 2. Dialog 위젯을 반환
       return Dialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.0), // 둥근 모서리
+          borderRadius: BorderRadius.circular(20.0),
         ),
         elevation: 0,
-        backgroundColor: Colors.transparent, // Dialog 자체는 투명하게
-
-        // ⭐️ 3. 내용물로 LifestyleResultContent 위젯 사용
-        child: LifestyleResultContent(nickname: nickname),
+        backgroundColor: Colors.transparent,
+        // ⭐️ 3. (수정) LifestyleResultContent로 닉네임과 'result' 전달
+        child: LifestyleResultContent(nickname: nickname, result: result),
       );
     },
   );
 }
 
-
-// ⭐️ 4. 기존 Scaffold를 "LifestyleResultContent" 위젯으로 변경
-// (이것이 팝업의 내용물이 됩니다)
+// ⭐️ 4. (수정) 팝업 내용 위젯
 class LifestyleResultContent extends StatelessWidget {
   final String nickname;
+  final LifestyleTestResultDetail result; // ⭐️ API에서 받은 결과
 
-  const LifestyleResultContent({super.key, required this.nickname});
+  const LifestyleResultContent({
+    super.key,
+    required this.nickname,
+    required this.result,
+  });
 
-  // ⭐️ 색상 정의
-  static const Color _textColor = Color(0xBF4C6DAF); // 4C6DAF 75%
+  static const Color _textColor = Color(0xBF4C6DAF);
   static const Color _buttonColor = Color(0xFF4C6DAF);
 
   @override
   Widget build(BuildContext context) {
-    const String lifestyleType = " "; // (나중에 받을 결과값)
+    // ⭐️ 5. (수정) 더 이상 'lifestyleType'을 " "로 비워두지 않음
+    // final String lifestyleType = " ";
 
-    // ⭐️ 5. Scaffold/Center 대신 Container가 최상위
     return Container(
-      width: MediaQuery.of(context).size.width * 0.85, // 화면 가로폭의 85%
+      width: MediaQuery.of(context).size.width * 0.85,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       decoration: BoxDecoration(
-        color: Colors.white, // ⭐️ 팝업의 흰색 배경
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min, // 내용물 크기만큼만 팝업 크기 잡기
+        mainAxisSize: MainAxisSize.min,
         children: [
 
-          // (임시) 아이콘
           Icon(
             Icons.analytics_outlined,
             size: 80,
@@ -59,9 +59,9 @@ class LifestyleResultContent extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // 결과 텍스트 (닉네임 포함)
+          // ⭐️ 6. (수정) API에서 받은 'result.typeName'을 표시
           Text(
-            "[$nickname]님의 라이프 스타일 유형은\n“$lifestyleType”입니다!",
+            "[$nickname]님의 라이프 스타일 유형은\n“${result.typeName}”입니다!", // ⭐️ API 결과 사용
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: _textColor,
@@ -70,13 +70,18 @@ class LifestyleResultContent extends StatelessWidget {
               height: 1.5,
             ),
           ),
+
+          // ⭐️ (선택) 키워드나 설명도 추가할 수 있습니다.
+          // Text(
+          //   result.keywords,
+          //   style: const TextStyle(color: _textColor, fontSize: 14),
+          // ),
+
           const SizedBox(height: 28),
 
           // "홈으로" 버튼
           OutlinedButton(
             onPressed: () {
-              print("홈 이동");
-              // ⭐️ 6. 홈 화면으로 이동 (이전 화면 스택 모두 제거)
               Navigator.pushNamedAndRemoveUntil(
                   context, '/home', (route) => false);
             },

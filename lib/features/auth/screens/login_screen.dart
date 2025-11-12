@@ -23,9 +23,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // ✅ 로그인 로직
   Future<void> _handleLogin() async {
-    // ✅ 실제 API 호출 부분 잠시 비활성화
-    // final viewModel = context.read<AuthViewModel>();
-    // if (viewModel.isLoading) return;
+    final viewModel = context.read<AuthViewModel>();
+    if (viewModel.isLoading) return;
 
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
@@ -37,34 +36,24 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // ✅ 임시 로그인 로직 (백엔드 연결 전까지)
-    if (email == "test@lifematch.com" && password == "1234") {
-      Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
-      return;
-    }
-
-    // ✅ 임시로: 모든 입력에 대해 홈 이동
-    Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
-
-    // 🔹 나중에 실제 백엔드 연결 시 아래 주석 해제
-    /*
-  final success = await viewModel.login(email, password);
-
-  if (!mounted) return;
-
-  if (success) {
-    Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(viewModel.errorMessage ?? "로그인 실패"),
-        backgroundColor: Colors.red,
-      ),
+    final bool success = await viewModel.login(
+      _emailController.text,
+      _passwordController.text,
     );
-  }
-  */
-  }
 
+    if (!mounted) return;
+
+    if (success) {
+      Navigator.pushReplacementNamed(context, '/style_test'); // 홈 라우트로 바꿔야 함. 유형검사 테스트를 위해 바꿔놓음
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(viewModel.errorMessage ?? "로그인 실패"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

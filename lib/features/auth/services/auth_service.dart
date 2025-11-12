@@ -35,25 +35,28 @@ class AuthService {
   }
 
   // --- 로그인 함수 ---
-  Future<TokenData> login(String email, String password) async {
+  Future<Map<String, dynamic>> login(String id, String password) async {
     try {
-      final response = await dio.post(
-        '/api/auth/login',
-        data: {
-          'user_email': email,
-          'user_password': password,
+      // ⭐️ 2. dio.post -> dio.get
+      final response = await dio.get(
+        '/api/auth/login', // (이 경로가 맞는지 확인하세요)
+        // ⭐️ 3. data: {} -> queryParameters: {}
+        queryParameters: {
+          'id': id,       // 백엔드의 (id: str)
+          'password': password, // 백엔드의 (password: str)
         },
       );
 
-      // 성공 시 JSON 데이터를 TokenData 모델 객체로 변환하여 반환
-      return TokenData.fromJson(response.data['data']);
+      // ⭐️ 4. 백엔드가 {"status": 200, "accessToken": ...}를 반환
+      return response.data;
 
     } on DioException catch (e) {
-      if (e.response?.statusCode == 401) {
-        // 401 Unauthorized (아이디/비밀번호 틀림)
-        throw Exception(e.response?.data['message'] ?? "로그인 정보가 올바르지 않습니다.");
-      }
-      throw Exception("로그인 중 알 수 없는 오류가 발생했습니다.");
+      // (오류 처리)
+      print("로그인 실패: ${e.response?.data}");
+      throw Exception(e.response?.data['detail'] ?? '로그인 실패');
+    } catch (e) {
+      print("알 수 없는 오류: $e");
+      throw Exception('알 수 없는 오류 발생');
     }
   }
 }
