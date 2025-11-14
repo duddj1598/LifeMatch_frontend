@@ -9,6 +9,7 @@ import 'features/auth/screens/find_id_screen.dart';
 import 'features/auth/screens/find_pw_screen.dart';
 import 'features/lifestyle_test/screens/lifestyle_test_screen.dart';
 import 'features/home/screens/home_screen.dart';
+import 'features/connection/my_group_manage_screen.dart';
 
 //테스트 임포트
 import 'features/team_management/screens/team_detail_screen.dart';
@@ -45,6 +46,7 @@ class MyApp extends StatelessWidget {
 
         '/team_detail': (context) => const TeamDetailScreen(),
         '/style_test': (context) => const LifestyleTestScreen(),
+        '/my-group-manage': (context) => const MyGroupManageScreen(),
       },
 
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lifematch_frontend/features/team_management/widgets/custom_bottom_nav_bar.dart'; // ✅ 커스텀 하단바 import
+import 'package:lifematch_frontend/features/team_management/widgets/custom_bottom_nav_bar.dart';
+import 'package:lifematch_frontend/features/team_management/screens/team_detail_screen.dart'; // ✅ TeamDetailScreen import 추가
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,11 +16,12 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'home':
         print('🏠 홈 이동');
         break;
-      case 'connection':
-        print('🔗 소모임 연결');
-        break;
       case 'chat':
         print('💬 채팅 탭');
+      case 'connection':
+        print('🔗 소모임 연결');
+        Navigator.pushNamed(context, '/my-group-manage');
+        break;
         break;
       case 'bell':
         print('🔔 알림 탭');
@@ -28,6 +30,17 @@ class _HomeScreenState extends State<HomeScreen> {
         print('👤 프로필 탭');
         break;
     }
+  }
+
+  // ✅ 카테고리 클릭 시 TeamDetailScreen으로 이동
+  void _navigateToTeamDetail(String category) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const TeamDetailScreen(),
+      ),
+    );
+    print('📂 $category 카테고리 선택 → TeamDetailScreen 이동');
   }
 
   @override
@@ -158,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 25),
 
-            // ✅ 카테고리 그리드
+            // ✅ 카테고리 그리드 (onTap 추가)
             Expanded(
               child: GridView.count(
                 physics: const NeverScrollableScrollPhysics(),
@@ -171,21 +184,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     '소비 · 경제',
                     'assets/images/economy_icon.png',
                     const Color(0xFFFFF9E6),
+                        () => _navigateToTeamDetail('소비 · 경제'),
                   ),
                   _buildCategoryCard(
                     '생활습관 · 건강',
                     'assets/images/health_icon.png',
                     const Color(0xFFE8F5E9),
+                        () => _navigateToTeamDetail('생활습관 · 건강'),
                   ),
                   _buildCategoryCard(
                     '기술',
                     'assets/images/technology_icon.png',
                     const Color(0xFFE3F2FD),
+                        () => _navigateToTeamDetail('기술'),
                   ),
                   _buildCategoryCard(
                     '여가 · 문화',
                     'assets/images/culture_icon.png',
                     const Color(0xFFFFF3E0),
+                        () => _navigateToTeamDetail('여가 · 문화'),
                   ),
                 ],
               ),
@@ -231,46 +248,49 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ✅ 카테고리 카드
-  static Widget _buildCategoryCard(
-      String title, String imagePath, Color bgColor) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                imagePath,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
+  // ✅ 카테고리 카드 (onTap 파라미터 추가)
+  Widget _buildCategoryCard(
+      String title, String imagePath, Color bgColor, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap, // ✅ 클릭 시 TeamDetailScreen으로 이동
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
+                  imagePath,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 13),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
+            const SizedBox(height: 13),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

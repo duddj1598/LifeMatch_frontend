@@ -31,6 +31,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     switch (tag) {
       case 'home':
         print('홈 이동');
+        Navigator.pop(context);
         break;
       case 'connection':
         print('소모임 연결');

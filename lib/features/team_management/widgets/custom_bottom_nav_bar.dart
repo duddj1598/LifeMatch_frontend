@@ -25,8 +25,8 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _buildNavIcon('home', 'assets/images/home_icon.png'),
-            _buildNavIcon('connection', 'assets/images/connection_icon.png'),
             _buildNavIcon('chat', 'assets/images/chat_icon.png'),
+            _buildNavIcon('connection', 'assets/images/connection_icon.png'),
             _buildNavIcon('bell', 'assets/images/bell_icon.png'),
             _buildNavIcon('profile', 'assets/images/profile_icon.png'),
           ],
