@@ -61,7 +61,7 @@ class LifestyleResultContent extends StatelessWidget {
 
           // ⭐️ 6. (수정) API에서 받은 'result.typeName'을 표시
           Text(
-            "[$nickname]님의 라이프 스타일 유형은\n“${result.typeName}”입니다!", // ⭐️ API 결과 사용
+            "$nickname님의 라이프 스타일 유형은\n“${result.typeName}”입니다!", // ⭐️ API 결과 사용
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: _textColor,

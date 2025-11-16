@@ -49,7 +49,7 @@ class _LoadingPopupContent extends StatelessWidget {
           const _LoadingSpinner(size: 80.0), // 스피너 크기
           const SizedBox(height: 28),
           Text(
-            "[$nickname]님의 취향을 파악 중 입니다.",
+            "$nickname님의 취향을 파악 중 입니다.",
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: textColor,
