@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:lifematch_frontend/features/auth/services/auth_service.dart';
 import 'package:lifematch_frontend/core/services/storage_service.dart';
 import 'package:jwt_decode/jwt_decode.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 
 // 2. 'ChangeNotifier'를 상속(extends)하여 ViewModel을 만듭니다.
 class AuthViewModel extends ChangeNotifier {
@@ -19,6 +21,12 @@ class AuthViewModel extends ChangeNotifier {
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage; // UI가 에러 메시지를 읽을 수 있도록 getter 제공
+
+  String _encryptPassword(String password) {
+    final bytes = utf8.encode(password); // 1. 비밀번호를 바이트로 변환
+    final digest = sha256.convert(bytes); // 2. SHA-256 해시 생성
+    return digest.toString(); // 3. 해시 값을 문자열로 반환
+  }
 
   // 5. 상태 변경 헬퍼: 상태를 변경하고 UI에 알림 (notifyListeners)
   void _setLoading(bool loading) {
@@ -36,6 +44,7 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   // --- 회원가입 로직 (UI가 호출할 함수) ---
+  // --- 회원가입 로직 (UI가 호출할 함수) ---
   Future<bool> signup({
     required String email,
     required String nickname,
@@ -45,73 +54,90 @@ class AuthViewModel extends ChangeNotifier {
     _setError(null);   // 2. 이전 에러 메시지 초기화
 
     try {
-      // 실제 API 로직(서비스) 호출
+      // ⭐️ 3. (수정) 회원가입 시에도 비밀번호를 암호화합니다.
+      final encryptedPassword = _encryptPassword(password);
+
+      // ⭐️ 4. (수정) 암호화된 비밀번호를 전송합니다.
       await _authService.signup(
         email: email,
         nickname: nickname,
-        password: password,
+        password: encryptedPassword, // 👈 암호화된 값
       );
 
-      _setLoading(false); // 4. 로딩 종료
+      _setLoading(false); // 5. 로딩 종료
       return true; // ⭐️ UI에 "성공" 알림
 
     } catch (e) {
-      // 실패 시
-      // e.toString()이 "Exception: 이미 사용 중인 이메일입니다." 처럼
-      // "Exception: "을 포함하므로, 이를 제거하고 에러 메시지 저장
       _setError(e.toString().replaceFirst("Exception: ", ""));
       return false; // ⭐️ UI에 "실패" 알림
     }
-
   }
+
   void _setErrorMessage(String? message) {
     _errorMessage = message;
     notifyListeners();
   }
   // --- (임시) 로그인 로직 (나중에 사용) ---
-  Future<bool> login(String email, String password) async {
+  Future<bool?> login(String email, String password) async {
     _setLoading(true);
     _setErrorMessage(null);
 
     try {
-      final Map<String, dynamic> responseData =
-      await _authService.login(email, password);
+      print("[로그인 1] 암호화 시작");
+      final encryptedPassword = _encryptPassword(password);
 
+      print("[로그인 2] API 서비스 호출");
+      final Map<String, dynamic> responseData =
+      await _authService.login(email, encryptedPassword);
+
+      print("[로그인 3] 200 OK 받음. 데이터: $responseData");
       final String? accessToken = responseData['accessToken'];
+      final bool? hasCompletedSurvey = responseData['hasCompletedSurvey'];
+      final String? backendNickname = responseData['nickname'];
 
       if (accessToken != null) {
-        String? nickname;
+        print("[로그인 4] JWT 디코딩 시도");
+        String? jwtNickname;
         try {
-          // 1. 토큰에서 닉네임 추출
           Map<String, dynamic> payload = Jwt.parseJwt(accessToken);
-          nickname = payload['nickname'];
-        } catch (e) {
-          print("JWT 디코딩 오류: $e");
-          nickname = null;
-        }
+          jwtNickname = payload['nickname'];
+        } catch (e) { jwtNickname = null; }
 
-        // 2. 토큰 및 ID 저장
+        final String? nickname = backendNickname ?? jwtNickname;
+
+        print("[로그인 5] 'saveToken' 호출 시도");
         await _storageService.saveToken(accessToken);
+
+        print("[로그인 6] 'saveUserId' 호출 시도");
         await _storageService.saveUserId(email);
 
-        // 3. ⭐️ (수정) 닉네임이 정상적으로 있을 때만 저장
+        print("[로그인 7] 'saveNickname' 호출 시도");
         if (nickname != null && nickname.isNotEmpty) {
           await _storageService.saveNickname(nickname);
         }
-        // ⭐️ (else 블록을 아예 삭제함)
 
+        print("[로그인 8] 'saveLifestyleType' 호출 시도");
+        if (hasCompletedSurvey != null) {
+          await _storageService.saveLifestyleType(hasCompletedSurvey.toString());
+        }
+
+        print("[로그인 9] '_setLoading(false)' 호출 시도");
         _setLoading(false);
-        return true;
+
+        print("[로그인 10] 성공! 반환");
+        return hasCompletedSurvey;
       } else {
         _setErrorMessage("로그인에 실패했습니다. (토큰 없음)");
         _setLoading(false);
-        return false;
+        return null;
       }
 
     } catch (e) {
+      print("🚨🚨 [로그인 치명적 오류] 🚨🚨");
+      print(e.toString()); // ⭐️ 오류 내용 출력
       _setErrorMessage(e.toString());
       _setLoading(false);
-      return false;
+      throw Exception(e.toString());
     }
   }
 }

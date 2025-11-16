@@ -158,70 +158,36 @@ class _LifestyleTestScreenState extends State<LifestyleTestScreen> {
       width: double.infinity,
       child: ElevatedButton(
         onPressed: () async {
-          // ⭐️ 8-1. 유효성 검사 (총 8개 질문)
-          final int totalQuestions = _questionParts?.allQuestions.length ?? 8;
-          if (_answers.length < totalQuestions) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("모든 설문에 답 해 주세요!"),
-                backgroundColor: Colors.redAccent,
-              ),
-            );
-            return;
-          }
+          // ... (유효성 검사, 닉네임/ID 가져오기 로직) ...
 
-          // ⭐️ 8-2. (필수) 저장된 user_id 가져오기
           final String? userId = await _storageService.getUserId();
-          if (userId == null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("로그인 정보가 없습니다. 다시 로그인해주세요.")),
-            );
-            return;
-          }
-
-          // ⭐️ 8-3. 닉네임 대신 userId를 팝업에 사용 (임시)
-          // (나중에 닉네임도 Storage에 저장해서 사용하세요)
           final String? nickname = await _storageService.getNickname();
-          final String tempNickname = userId;
-          final String displayName = (nickname != null && nickname.isNotEmpty) ? nickname : userId;
+          if (userId == null) { /* ... 오류 ... */ return; }
+          final String displayName = nickname ?? userId;
+
           showLifestyleLoadingPopup(context, displayName);
 
           try {
-            // ⭐️ 8-4. (API 호출) 선택된 optionId 리스트를 서비스로 전달
+            // 1. API로 결과 제출 (기존 코드)
             final List<int> selectedOptionIds = _answers.values.toList();
             final LifestyleTestResultDetail result =
-              await _testService.submitTest(userId, selectedOptionIds);
+            await _testService.submitTest(userId, selectedOptionIds);
 
-            // ⭐️ (나중에 3초 지연은 삭제)
+            // ⭐️ 2. (필수) 검사 결과를 Storage에도 즉시 저장
+            await _storageService.saveLifestyleType(result.typeName);
+
             await Future.delayed(const Duration(seconds: 3));
 
             if (!mounted) return;
-            Navigator.pop(context); // 로딩 팝업 닫기
+            Navigator.pop(context);
 
-            // ⭐️ 8-5. (API 결과 전달)
-            // (lifestyle_result_screen.dart가 LifestyleTestResultDetail을 받도록 수정해야 함)
             showLifestyleResultPopup(context, displayName, result);
 
           } catch (e) {
-            if (!mounted) return;
-            Navigator.pop(context); // 로딩 팝업 닫기
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("오류 발생: ${e.toString()}")),
-            );
+            // ... (오류 처리)
           }
-        },
-        style: ElevatedButton.styleFrom(
-          // ... (버튼 스타일 동일)
-          backgroundColor: const Color(0xFFEC6A6A),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: const Text(
-          "완료",
-          style: TextStyle(fontSize: 20, color: Colors.white),
-        ),
+        }, child: null,
+        // ... (버튼 스타일)
       ),
     );
   }
