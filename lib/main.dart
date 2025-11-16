@@ -44,7 +44,6 @@ class MyApp extends StatelessWidget {
         '/find_pw': (context) => const FindPwScreen(),
         '/home': (context) => const HomeScreen(),
 
-        '/team_detail': (context) => const TeamDetailScreen(),
         '/style_test': (context) => const LifestyleTestScreen(),
         '/my-group-manage': (context) => const MyGroupManageScreen(),
       },

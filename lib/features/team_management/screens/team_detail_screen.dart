@@ -2,7 +2,14 @@ import 'package:flutter/material.dart';
 import '../widgets/custom_bottom_nav_bar.dart'; // 하단바 위젯 import
 
 class TeamDetailScreen extends StatefulWidget {
-  const TeamDetailScreen({super.key});
+  // ⭐️ 1. 홈 화면에서 카테고리 이름을 받을 변수 추가
+  final String selectedCategory;
+
+  // ⭐️ 2. 생성자 수정: 'selectedCategory'를 받도록 변경
+  const TeamDetailScreen({
+    super.key,
+    required this.selectedCategory, // ⭐️ required 추가
+  });
 
   @override
   State<TeamDetailScreen> createState() => _TeamDetailScreenState();
@@ -55,7 +62,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       appBar: AppBar(
         // ... (기존 AppBar)
         title: const Text(
-          "세부사항 선택 (팀장)",
+          "",
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,
@@ -73,9 +80,9 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // ... (제목, 탭 버튼)
-            const Text(
-              "카테고리",
-              style: TextStyle(
+            Text(
+              widget.selectedCategory,
+              style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF6B7AA1),

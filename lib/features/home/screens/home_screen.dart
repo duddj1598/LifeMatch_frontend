@@ -37,7 +37,10 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const TeamDetailScreen(),
+        // ⭐️ 1. builder 부분을 수정
+        builder: (context) => TeamDetailScreen(
+          selectedCategory: category, // 👈 ⭐️ 클릭한 카테고리 이름 전달
+        ),
       ),
     );
     print('📂 $category 카테고리 선택 → TeamDetailScreen 이동');
