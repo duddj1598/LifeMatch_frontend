@@ -23,29 +23,36 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // ✅ 로그인 로직
   Future<void> _handleLogin() async {
-    final viewModel = context.read<AuthViewModel>();
+    final viewModel = Provider.of<AuthViewModel>(context, listen: false);
+
     if (viewModel.isLoading) return;
 
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-
-    if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("이메일과 비밀번호를 모두 입력해주세요.")),
-      );
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      // ... (스낵바)
       return;
     }
 
-    final bool success = await viewModel.login(
-      _emailController.text,
-      _passwordController.text,
-    );
+    try {
+      // ⭐️ 1. (수정) 반환 타입이 String? -> bool?
+      final bool? hasCompletedSurvey = await viewModel.login(
+        _emailController.text,
+        _passwordController.text,
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    if (success) {
-      Navigator.pushReplacementNamed(context, '/style_test'); // 홈 라우트로 바꿔야 함. 유형검사 테스트를 위해 바꿔놓음
-    } else {
+      // ⭐️ 2. (수정) 'true'인지 'false'인지 확인
+      if (hasCompletedSurvey == true) {
+        // ⭐️ 3. 검사 완료 유저: 홈 화면
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        // ⭐️ 4. 신규 유저 (false 또는 null): 유형 검사
+        Navigator.pushReplacementNamed(context, '/style_test');
+      }
+
+    } catch (e) {
+      // ⭐️ 5. (로그인 실패 시)
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(viewModel.errorMessage ?? "로그인 실패"),
@@ -54,7 +61,6 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
   }
-
   @override
   Widget build(BuildContext context) {
     final isLoading = context.watch<AuthViewModel>().isLoading;
