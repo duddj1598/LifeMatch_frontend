@@ -9,28 +9,29 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  // ✅ 하단바 클릭 처리
-  void _handleBottomTap(String tag) {
-    switch (tag) {
-      case 'home':
-        print('🏠 홈 이동');
-        break;
-      case 'chat':
-        print('💬 채팅 탭');
-      case 'connection':
-        print('🔗 소모임 연결');
-        Navigator.pushNamed(context, '/my-group-manage');
-        break;
-        break;
-      case 'bell':
-        print('🔔 알림 탭');
-        break;
-      case 'profile':
-        print('👤 프로필 탭');
-        break;
+  class _HomeScreenState extends State<HomeScreen> {
+    // ✅ 하단바 클릭 처리
+    void _handleBottomTap(String tag) {
+      switch (tag) {
+        case 'home':
+          print('🏠 홈 이동');
+          Navigator.pushNamed(context, '/home');
+          break;
+        case 'chat':
+          print('💬 채팅 탭');
+        case 'connection':
+          print('🔗 소모임 연결');
+          Navigator.pushNamed(context, '/my-group-manage');
+          break;
+        case 'bell':
+          print('🔔 알림 탭');
+          Navigator.pushNamed(context, '/notification');
+          break;
+        case 'profile':
+          print('👤 프로필 탭');
+          break;
+      }
     }
-  }
 
   // ✅ 카테고리 클릭 시 TeamDetailScreen으로 이동
   void _navigateToTeamDetail(String category) {

@@ -34,11 +34,23 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
   void _handleBottomTap(String tag) {
     switch (tag) {
       case 'home':
-        Navigator.popUntil(context, ModalRoute.withName('/home'));
+        print('🏠 홈 이동');
+        Navigator.pushNamed(context, '/home');
         break;
-    // ... (다른 탭 로직) ...
-      default:
-        print('$tag 탭 클릭');
+      case 'chat':
+        print('💬 채팅 탭');
+      case 'connection':
+        print('🔗 소모임 연결');
+        Navigator.pushNamed(context, '/my-group-manage');
+        break;
+        break;
+      case 'bell':
+        print('🔔 알림 탭');
+        Navigator.pushNamed(context, '/notification');
+        break;
+      case 'profile':
+        print('👤 프로필 탭');
+        break;
     }
   }
 

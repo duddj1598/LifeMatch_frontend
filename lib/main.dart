@@ -13,6 +13,7 @@ import 'features/connection/my_group_manage_screen.dart';
 import 'features/group/screens/group_detail_screen.dart';
 
 //테스트 임포트
+import 'features/notification/screens/notification_screen.dart';
 import 'features/team_management/screens/team_detail_screen.dart';
 
 void main() {
@@ -34,7 +35,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.blue),
 
       // ✅ 앱이 시작할 때 바로 이동할 첫 화면
-      initialRoute: '/group_detail',
+      initialRoute: '/home',
 
 
       // ✅ 네비게이션 라우트 등록
@@ -50,6 +51,7 @@ class MyApp extends StatelessWidget {
         //버튼타입 매개변수로 입력해야 함. buttonType: GroupDetailButtonType.버튼타입(join, none, joinOrInquire, acceptOrDecline 중 택1)
         '/group_detail': (context) => const GroupDetailScreen(
           buttonType: GroupDetailButtonType.joinOrInquire),
+        '/notification': (context) => const NotificationScreen(),
       },
 
     );
