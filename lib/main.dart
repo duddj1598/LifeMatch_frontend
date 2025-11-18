@@ -10,8 +10,10 @@ import 'features/auth/screens/find_pw_screen.dart';
 import 'features/lifestyle_test/screens/lifestyle_test_screen.dart';
 import 'features/home/screens/home_screen.dart';
 import 'features/connection/my_group_manage_screen.dart';
+import 'features/group/screens/group_detail_screen.dart';
 
 //테스트 임포트
+import 'features/notification/screens/notification_screen.dart';
 import 'features/team_management/screens/team_detail_screen.dart';
 
 void main() {
@@ -33,7 +35,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.blue),
 
       // ✅ 앱이 시작할 때 바로 이동할 첫 화면
-      initialRoute: '/login',
+      initialRoute: '/home',
 
 
       // ✅ 네비게이션 라우트 등록
@@ -44,9 +46,12 @@ class MyApp extends StatelessWidget {
         '/find_pw': (context) => const FindPwScreen(),
         '/home': (context) => const HomeScreen(),
 
-        '/team_detail': (context) => const TeamDetailScreen(),
         '/style_test': (context) => const LifestyleTestScreen(),
         '/my-group-manage': (context) => const MyGroupManageScreen(),
+        //버튼타입 매개변수로 입력해야 함. buttonType: GroupDetailButtonType.버튼타입(join, none, joinOrInquire, acceptOrDecline 중 택1)
+        '/group_detail': (context) => const GroupDetailScreen(
+          buttonType: GroupDetailButtonType.joinOrInquire),
+        '/notification': (context) => const NotificationScreen(),
       },
 
     );

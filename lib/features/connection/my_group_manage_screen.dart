@@ -47,32 +47,39 @@ class MyGroupManageScreen extends StatelessWidget {
         ),
       ),
 
+      // ⭐️ 수정된 네비게이션 핸들러
       bottomNavigationBar: CustomBottomNavBar(
+        selectedTag: 'connection',
         onTabSelected: (tag) {
           switch (tag) {
             case 'home':
-              Navigator.pushReplacementNamed(context, '/home');
+              print('🏠 홈 이동');
+              // 홈으로 이동 (쌓인 스택 제거 후 이동 추천, 여기선 요청대로 pushNamed 사용)
+              Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
               break;
             case 'chat':
-              Navigator.pushReplacementNamed(context, '/chat');
+              print('💬 채팅 탭');
+              // Navigator.pushNamed(context, '/chat'); // 추후 구현
               break;
-            case 'connection':   // ← 현재 화면
-              Navigator.pushReplacementNamed(context, '/connection');
+            case 'connection':
+              print('🔗 소모임 연결');
+              // 현재 화면이므로 이동 로직 없음
               break;
             case 'bell':
-              Navigator.pushReplacementNamed(context, '/notifications');
+              print('🔔 알림 탭');
+              Navigator.pushNamed(context, '/notification');
               break;
             case 'profile':
-              Navigator.pushReplacementNamed(context, '/mypage');
+              print('👤 프로필 탭');
+              // Navigator.pushNamed(context, '/mypage'); // 추후 구현
               break;
           }
         },
       ),
-
     );
   }
 
-  // 📌 섹션 타이틀 (서브타이틀 추가)
+  // 📌 섹션 타이틀
   Widget _sectionTitle(String title, String subtitle) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,7 +104,7 @@ class MyGroupManageScreen extends StatelessWidget {
     );
   }
 
-  // 📌 리스트 UI (개선된 디자인)
+  // 📌 리스트 UI
   Widget _groupList({required bool isInvite}) {
     return Column(
       children: List.generate(
@@ -122,12 +129,12 @@ class MyGroupManageScreen extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // 대표 사진 박스 (그라데이션 추가)
+              // 대표 사진 박스
               Container(
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
+                  gradient: const LinearGradient(
                     colors: [
                       Color(0xFFE8E3F5),
                       Color(0xFFD4CEE8),
@@ -197,7 +204,6 @@ class MyGroupManageScreen extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
                       ],
                     ),
                   ],
@@ -209,9 +215,7 @@ class MyGroupManageScreen extends StatelessWidget {
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
                   elevation: 0,
-                  backgroundColor: isInvite
-                      ? const Color(0xFF9AA8DA)
-                      : const Color(0xFF9AA8DA),
+                  backgroundColor: const Color(0xFF9AA8DA),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
