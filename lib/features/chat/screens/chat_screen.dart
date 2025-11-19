@@ -76,6 +76,9 @@ class _ChatScreenState extends State<ChatScreen>
       case 'bell':
         Navigator.pushNamed(context, '/notification');
         break;
+      case 'profile':
+        Navigator.pushNamed(context, '/my-profile');
+        break;
     }
   }
 
@@ -91,7 +94,7 @@ class _ChatScreenState extends State<ChatScreen>
 
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pushReplacementNamed(context, '/home')
         ),
 
         title: const Text(

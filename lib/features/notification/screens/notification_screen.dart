@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lifematch_frontend/features/team_management/widgets/custom_bottom_nav_bar.dart';
-
+import 'package:lifematch_frontend/features/group/screens/group_detail_screen.dart';
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
 
@@ -77,16 +77,16 @@ class _NotificationScreenState extends State<NotificationScreen>
         break;
       case 'chat':
         print('💬 채팅 탭');
+        Navigator.pushNamed(context, '/chat');
       case 'connection':
         print('🔗 소모임 연결');
         Navigator.pushNamed(context, '/my-group-manage');
         break;
       case 'bell':
-        print('🔔 알림 탭');
-        Navigator.pushNamed(context, '/notification');
         break;
       case 'profile':
         print('👤 프로필 탭');
+        Navigator.pushNamed(context, '/my-profile');
         break;
     }
   }
@@ -101,7 +101,7 @@ class _NotificationScreenState extends State<NotificationScreen>
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pushReplacementNamed(context, '/home')
         ),
         title: const Text(
           "알림",
@@ -210,7 +210,7 @@ class _NotificationScreenState extends State<NotificationScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. 상단 정보 (아이콘, 제목, 시간)
+          // 1. 상단 정보 (아이콘, 제목, 시간) - 기존과 동일
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -258,7 +258,7 @@ class _NotificationScreenState extends State<NotificationScreen>
 
           const SizedBox(height: 12),
 
-          // 2. 메시지 내용 (박스 처리)
+          // 2. 메시지 내용 (박스 처리) - 기존과 동일
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
@@ -274,8 +274,9 @@ class _NotificationScreenState extends State<NotificationScreen>
 
           const SizedBox(height: 16),
 
-          // 3. 액션 버튼 (수락 / 거절)
-          Row(
+          // 3. 액션 버튼 (수정된 부분)
+          isApplicant
+              ? Row( // 소모임 신청자 (거절/수락 버튼 2개)
             children: [
               Expanded(
                 child: OutlinedButton(
@@ -288,7 +289,8 @@ class _NotificationScreenState extends State<NotificationScreen>
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: Text("거절", style: TextStyle(color: Colors.grey.shade600)),
+                  child: Text("거절",
+                      style: TextStyle(color: Colors.grey.shade600)),
                 ),
               ),
               const SizedBox(width: 10),
@@ -304,16 +306,36 @@ class _NotificationScreenState extends State<NotificationScreen>
                         borderRadius: BorderRadius.circular(8)),
                     elevation: 0,
                   ),
-                  child: const Text("수락", style: TextStyle(color: Colors.white)),
+                  child: const Text("수락",
+                      style: TextStyle(color: Colors.white)),
                 ),
               ),
             ],
+          )
+              : // 소모임 초대 (세부사항 버튼 1개)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                print("세부사항 클릭 - GroupDetailScreen으로 이동");
+                // 🚨 여기에 GroupDetailScreen으로 이동하는 로직을 추가해야 합니다.
+                Navigator.push(context, MaterialPageRoute(builder: (c) => GroupDetailScreen(buttonType: GroupDetailButtonType.acceptOrDecline)));
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4C6DAF),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+                elevation: 0,
+              ),
+              child: const Text("세부사항",
+                  style: TextStyle(color: Colors.white)),
+            ),
           ),
         ],
       ),
     );
   }
-
   // 빈 화면 표시 위젯
   Widget _buildEmptyState(String text) {
     return Center(

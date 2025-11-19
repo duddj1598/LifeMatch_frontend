@@ -9,6 +9,13 @@ class MyGroupManageScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F7),
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
+          onPressed: () {
+            // '/home' 라우트로 이동하며 현재 화면을 대체합니다.
+            Navigator.pushReplacementNamed(context, '/home');
+          },
+        ),
         title: const Text(
           "내 소모임 관리",
           style: TextStyle(
@@ -59,7 +66,7 @@ class MyGroupManageScreen extends StatelessWidget {
               break;
             case 'chat':
               print('💬 채팅 탭');
-              // Navigator.pushNamed(context, '/chat'); // 추후 구현
+              Navigator.pushNamed(context, '/chat');
               break;
             case 'connection':
               print('🔗 소모임 연결');
@@ -71,7 +78,7 @@ class MyGroupManageScreen extends StatelessWidget {
               break;
             case 'profile':
               print('👤 프로필 탭');
-              // Navigator.pushNamed(context, '/mypage'); // 추후 구현
+              Navigator.pushNamed(context, '/my-profile');
               break;
           }
         },
@@ -212,7 +219,9 @@ class MyGroupManageScreen extends StatelessWidget {
 
               // 버튼
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+
+                },
                 style: ElevatedButton.styleFrom(
                   elevation: 0,
                   backgroundColor: const Color(0xFF9AA8DA),
