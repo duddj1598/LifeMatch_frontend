@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lifematch_frontend/features/team_management/widgets/custom_bottom_nav_bar.dart';
 import 'package:lifematch_frontend/features/team_management/screens/team_detail_screen.dart'; // ✅ TeamDetailScreen import 추가
+import 'package:lifematch_frontend/features/group/screens/group_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,20 +16,23 @@ class HomeScreen extends StatefulWidget {
       switch (tag) {
         case 'home':
           print('🏠 홈 이동');
-          Navigator.pushNamed(context, '/home');
+          Navigator.pushReplacementNamed(context, '/home');
           break;
         case 'chat':
           print('💬 채팅 탭');
+          Navigator.pushReplacementNamed(context, '/chat');
+          break;
         case 'connection':
           print('🔗 소모임 연결');
-          Navigator.pushNamed(context, '/my-group-manage');
+          Navigator.pushReplacementNamed(context, '/my-group-manage');
           break;
         case 'bell':
           print('🔔 알림 탭');
-          Navigator.pushNamed(context, '/notification');
+          Navigator.pushReplacementNamed(context, '/notification');
           break;
         case 'profile':
           print('👤 프로필 탭');
+          Navigator.pushReplacementNamed(context, '/my-profile');
           break;
       }
     }
@@ -147,9 +151,34 @@ class HomeScreen extends StatefulWidget {
                   ),
                   const SizedBox(height: 10),
 
-                  _buildRecommendationItem('"도심 속 피크닉 모임"'),
+                  _buildRecommendationItem(
+                    '"도심 속 피크닉 모임"',
+                        () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => GroupDetailScreen(
+                            buttonType: GroupDetailButtonType.joinOrInquire, // 👈 원하는 타입 선택
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 10),
-                  _buildRecommendationItem('"주말 독서모임 모집"'),
+                  _buildRecommendationItem(
+                    '"주말 독서모임 모집"',
+                        () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => GroupDetailScreen(
+                            buttonType: GroupDetailButtonType.joinOrInquire, // 여기도 동일
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
 
                   const SizedBox(height: 10),
                   Row(
@@ -217,42 +246,52 @@ class HomeScreen extends StatefulWidget {
 
       // ✅ 기존 BottomNavigationBar 대신 CustomBottomNavBar 연결
       bottomNavigationBar: CustomBottomNavBar(
+        selectedTag: 'home',   // ⭐ 필수!! ← 이 한 줄 때문에 프로필이 안 뜬 거임
         onTabSelected: _handleBottomTap,
       ),
     );
   }
 
-  // ✅ 추천 활동 아이템
-  static Widget _buildRecommendationItem(String title) {
-    return Row(
-      children: [
-        const Text('• ',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
+    static Widget _buildRecommendationItem(
+        String title, VoidCallback onDetailTap) {
+      return Row(
+        children: [
+          const Text(
+            '• ',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
-        ),
-        const Spacer(),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            border: Border.all(color: Color(0xFFBDBDBD)),
-            borderRadius: BorderRadius.circular(12),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
           ),
-          child: const Text(
-            '세부정보',
-            style: TextStyle(fontSize: 13, color: Colors.black87),
-          ),
-        ),
-      ],
-    );
-  }
+          const Spacer(),
 
-  // ✅ 카테고리 카드 (onTap 파라미터 추가)
+          /// 🔥 여기가 중요! 세부정보 버튼 클릭 가능하도록 GestureDetector 추가
+          GestureDetector(
+            onTap: onDetailTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                border: Border.all(color: Color(0xFFBDBDBD)),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                '세부정보',
+                style: TextStyle(fontSize: 13, color: Colors.black87),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+
+
+    // ✅ 카테고리 카드 (onTap 파라미터 추가)
   Widget _buildCategoryCard(
       String title, String imagePath, Color bgColor, VoidCallback onTap) {
     return GestureDetector(

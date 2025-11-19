@@ -11,6 +11,10 @@ import 'features/lifestyle_test/screens/lifestyle_test_screen.dart';
 import 'features/home/screens/home_screen.dart';
 import 'features/connection/my_group_manage_screen.dart';
 import 'features/group/screens/group_detail_screen.dart';
+import 'package:lifematch_frontend/features/chat/screens/chat_screen.dart';
+import 'package:lifematch_frontend/features/chat/screens/chat_group_detail_screen.dart';
+import 'package:lifematch_frontend/features/chat/screens/chat_personal_detail_screen.dart';
+import 'package:lifematch_frontend/features/profile/screens/my_profile_screen.dart';
 
 //테스트 임포트
 import 'features/notification/screens/notification_screen.dart';
@@ -49,9 +53,16 @@ class MyApp extends StatelessWidget {
         '/style_test': (context) => const LifestyleTestScreen(),
         '/my-group-manage': (context) => const MyGroupManageScreen(),
         //버튼타입 매개변수로 입력해야 함. buttonType: GroupDetailButtonType.버튼타입(join, none, joinOrInquire, acceptOrDecline 중 택1)
-        '/group_detail': (context) => const GroupDetailScreen(
-          buttonType: GroupDetailButtonType.joinOrInquire),
+        '/group_detail': (context) => GroupDetailScreen(
+          buttonType: GroupDetailButtonType.joinOrInquire,
+        ),
+
         '/notification': (context) => const NotificationScreen(),
+        '/chat': (context) => const ChatScreen(),
+        '/chat-group-detail': (context) => const ChatGroupDetailScreen(),
+        '/chat-personal-detail': (context) => const ChatPersonalDetailScreen(),
+        '/my-profile': (context) => const MyProfileScreen(),
+
       },
 
     );
