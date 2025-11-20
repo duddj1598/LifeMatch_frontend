@@ -15,6 +15,8 @@ import 'package:lifematch_frontend/features/chat/screens/chat_screen.dart';
 import 'package:lifematch_frontend/features/chat/screens/chat_group_detail_screen.dart';
 import 'package:lifematch_frontend/features/chat/screens/chat_personal_detail_screen.dart';
 import 'package:lifematch_frontend/features/profile/screens/my_profile_screen.dart';
+import 'package:lifematch_frontend/features/profile/screens/edit_profile_screen.dart';
+import 'package:lifematch_frontend/features/profile/screens/settings_screen.dart';
 
 //테스트 임포트
 import 'features/notification/screens/notification_screen.dart';
@@ -39,7 +41,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.blue),
 
       // ✅ 앱이 시작할 때 바로 이동할 첫 화면
-      initialRoute: '/home',
+      initialRoute: '/login',
 
 
       // ✅ 네비게이션 라우트 등록
@@ -62,6 +64,8 @@ class MyApp extends StatelessWidget {
         '/chat-group-detail': (context) => const ChatGroupDetailScreen(),
         '/chat-personal-detail': (context) => const ChatPersonalDetailScreen(),
         '/my-profile': (context) => const MyProfileScreen(),
+        '/edit-profile': (context) => const EditProfileScreen(),
+        '/settings': (context) => const SettingsScreen(),
 
       },
 

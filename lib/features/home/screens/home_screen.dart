@@ -58,10 +58,7 @@ class HomeScreen extends StatefulWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFFF5F5F7),
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.black54),
-          onPressed: () {},
-        ),
+        automaticallyImplyLeading: false,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
