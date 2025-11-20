@@ -32,6 +32,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_svg: ^2.0.10+1  # ✅ SVG 사용 시 필요한 패키지
+  image_picker: ^1.0.7
 
 
   # The following adds the Cupertino Icons font to your application.

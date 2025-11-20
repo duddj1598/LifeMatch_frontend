@@ -89,6 +89,8 @@ class AuthViewModel extends ChangeNotifier {
       print("[로그인 2] API 서비스 호출");
       final Map<String, dynamic> responseData =
       await _authService.login(email, encryptedPassword);
+      print("🔥🔥 로그인 서버 응답 전체: $responseData");
+
 
       print("[로그인 3] 200 OK 받음. 데이터: $responseData");
       final String? accessToken = responseData['accessToken'];
@@ -109,7 +111,14 @@ class AuthViewModel extends ChangeNotifier {
         await _storageService.saveToken(accessToken);
 
         print("[로그인 6] 'saveUserId' 호출 시도");
-        await _storageService.saveUserId(email);
+        final String? userId = responseData["user_id"];
+
+        if (userId != null) {
+          await _storageService.saveUserId(userId);
+        } else {
+          print("🚨 서버에서 user_id를 보내지 않음!");
+        }
+
 
         print("[로그인 7] 'saveNickname' 호출 시도");
         if (nickname != null && nickname.isNotEmpty) {
