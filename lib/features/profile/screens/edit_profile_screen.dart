@@ -21,7 +21,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String userId = "";
   String accessToken = "";
 
-  // 활동 선호도 스위치 상태
+  // 활동 선호도
   bool preferEconomy = true;
   bool preferHealth = false;
   bool preferTech = true;
@@ -30,15 +30,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _loadCreds();
+    _loadInitialData();
   }
 
-  Future<void> _loadCreds() async {
+  /// ---------------------------
+  /// JWT, userId 불러오고 기존 프로필 로드
+  /// ---------------------------
+  Future<void> _loadInitialData() async {
     accessToken = await _storage.getToken() ?? "";
     userId = await _storage.getUserId() ?? "";
 
-    print("🟣 Loaded userId = $userId");
-    print("🟣 Loaded accessToken = $accessToken");
+    if (accessToken.isEmpty || userId.isEmpty) {
+      print("❌ 사용자 인증 정보 없음");
+      return;
+    }
+
+    final profile = await ProfileApi.getUserProfile(userId, accessToken);
+    if (profile != null) {
+      _nicknameController.text = profile["user_nickname"] ?? "";
+
+      final prefs = profile["activity_preferences"];
+      if (prefs != null) {
+        preferEconomy = prefs["economy"] ?? true;
+        preferHealth = prefs["health"] ?? false;
+        preferTech = prefs["tech"] ?? true;
+        preferCulture = prefs["culture"] ?? true;
+      }
+
+      setState(() {});
+    }
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -52,8 +72,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  /// ---------------------------
+  /// 프로필 저장
+  /// ---------------------------
   Future<void> _saveProfile() async {
-    if (userId.isEmpty || accessToken.isEmpty) {
+    if (accessToken.isEmpty || userId.isEmpty) {
       print("❌ 저장 불가: userId/token 없음");
       return;
     }
@@ -66,9 +89,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         "tech": preferTech,
         "culture": preferCulture,
       },
-      "profile_image": null
+      "profile_image": null,   // 이미지 업로드 기능 추후 구현
     };
-
 
     print("🟦 PATCH 요청 데이터 → $body");
 
@@ -80,7 +102,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (success) {
       print("✅ 프로필 수정 성공!");
-      Navigator.pop(context, true);  // true = 프로필 바뀜
+      Navigator.pop(context, true);
     } else {
       print("❌ 프로필 수정 실패");
     }

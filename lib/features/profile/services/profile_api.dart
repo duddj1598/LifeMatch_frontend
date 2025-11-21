@@ -5,8 +5,7 @@ class ProfileApi {
   static const String baseUrl = "http://10.0.2.2:8000/api/user";
 
   /// ------------------------------------------
-  /// 1) 프로필 조회
-  /// GET /api/user/{userId}/profile
+  /// 1) 프로필 조회 (GET /api/user/{userId}/profile)
   /// ------------------------------------------
   static Future<Map<String, dynamic>?> getUserProfile(
       String userId, String accessToken) async {
@@ -21,7 +20,7 @@ class ProfileApi {
         },
       );
 
-      print("🔵 GET /profile status: ${response.statusCode}");
+      print("🔵 GET /$userId/profile status: ${response.statusCode}");
       print("🔵 body: ${response.body}");
 
       if (response.statusCode == 200) {
@@ -37,10 +36,11 @@ class ProfileApi {
   }
 
   /// ------------------------------------------
-  /// 2) 프로필 수정 (닉네임 + 선호도 + 이미지 URL)
-  /// PATCH /api/user/{userId}/profile
+  /// 2) 프로필 수정 (PATCH /api/user/{userId}/profile)
   /// ------------------------------------------
-  static Future<bool> updateProfile(String userId, String accessToken,
+  static Future<bool> updateProfile(
+      String userId,
+      String accessToken,
       Map<String, dynamic> profileData) async {
     final url = Uri.parse("$baseUrl/$userId/profile");
 
@@ -54,7 +54,7 @@ class ProfileApi {
         body: jsonEncode(profileData),
       );
 
-      print("🟣 PATCH /profile → ${response.statusCode}");
+      print("🟣 PATCH /$userId/profile → ${response.statusCode}");
       print("🟣 request: ${jsonEncode(profileData)}");
 
       return response.statusCode == 200;
@@ -65,11 +65,12 @@ class ProfileApi {
   }
 
   /// ------------------------------------------
-  /// 3) 알림 설정 수정
-  /// PATCH /api/user/{userId}/settings/notifications
+  /// 3) 알림 설정 수정 (PATCH /api/user/{userId}/settings/notifications)
   /// ------------------------------------------
   static Future<bool> updateNotificationSettings(
-      String userId, String accessToken, Map<String, dynamic> settings) async {
+      String userId,
+      String accessToken,
+      Map<String, dynamic> settings) async {
     final url = Uri.parse("$baseUrl/$userId/settings/notifications");
 
     try {
@@ -82,7 +83,7 @@ class ProfileApi {
         body: jsonEncode(settings),
       );
 
-      print("🟡 PATCH /notifications → ${response.statusCode}");
+      print("🟡 PATCH /$userId/settings/notifications → ${response.statusCode}");
       print("🟡 request: ${jsonEncode(settings)}");
 
       return response.statusCode == 200;

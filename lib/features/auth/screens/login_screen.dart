@@ -21,38 +21,40 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // ✅ 로그인 로직
+  // 🔐 로그인 처리 로직
   Future<void> _handleLogin() async {
     final viewModel = Provider.of<AuthViewModel>(context, listen: false);
 
     if (viewModel.isLoading) return;
 
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      // ... (스낵바)
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("아이디와 비밀번호를 모두 입력해주세요"),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 
     try {
-      // ⭐️ 1. (수정) 반환 타입이 String? -> bool?
       final bool? hasCompletedSurvey = await viewModel.login(
-        _emailController.text,
-        _passwordController.text,
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
       );
 
       if (!mounted) return;
 
-      // ⭐️ 2. (수정) 'true'인지 'false'인지 확인
+      // 🔄 로그인 성공 결과 체크
       if (hasCompletedSurvey == true) {
-        // ⭐️ 3. 검사 완료 유저: 홈 화면
         Navigator.pushReplacementNamed(context, '/home');
       } else {
-        // ⭐️ 4. 신규 유저 (false 또는 null): 유형 검사
         Navigator.pushReplacementNamed(context, '/style_test');
       }
 
     } catch (e) {
-      // ⭐️ 5. (로그인 실패 시)
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(viewModel.errorMessage ?? "로그인 실패"),
@@ -61,20 +63,21 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
   }
+
   @override
   Widget build(BuildContext context) {
     final isLoading = context.watch<AuthViewModel>().isLoading;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
-      resizeToAvoidBottomInset: true, // ✅ 키보드 올라올 때 화면 밀림 방지
+      resizeToAvoidBottomInset: true,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // 로고 & 타이틀
+              // 🔵 로고
               Column(
                 children: [
                   Image.asset(
@@ -148,7 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 20),
 
-              // ✅ 로그인 버튼
+              // 로그인 버튼
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -161,9 +164,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   child: isLoading
-                      ? const CircularProgressIndicator(
-                    color: Colors.white,
-                  )
+                      ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
                     '로그인',
                     style: TextStyle(fontSize: 23, color: Colors.white),
@@ -196,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 16),
 
-              // 아이디 / 비밀번호 찾기
+              // 아이디 / 비번 찾기
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
