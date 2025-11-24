@@ -86,7 +86,7 @@ class AuthService {
       print("아이디 찾기 응답: ${response.data}");
 
       // FastAPI: FindIdResponse(status, user_nickname)
-      return response.data['user_nickname'];
+      return response.data['user_id'];
     } on DioException catch (e) {
       throw Exception(e.response?.data['detail'] ?? "아이디 찾기 실패");
     }
