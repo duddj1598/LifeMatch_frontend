@@ -441,6 +441,7 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
             onTap: () {
               print("팀원 초대 클릭");
               // 팀원 초대 로직 또는 화면 이동
+              Navigator.pushNamed(context, '/invite');
             },
           ),
 
