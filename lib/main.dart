@@ -9,7 +9,7 @@ import 'features/auth/screens/find_id_screen.dart';
 import 'features/auth/screens/find_pw_screen.dart';
 import 'features/lifestyle_test/screens/lifestyle_test_screen.dart';
 import 'features/home/screens/home_screen.dart';
-import 'features/connection/my_group_manage_screen.dart';
+import 'features/connection/screens/my_group_manage_screen.dart';
 import 'features/group/screens/group_detail_screen.dart';
 import 'package:lifematch_frontend/features/chat/screens/chat_screen.dart';
 import 'package:lifematch_frontend/features/chat/screens/chat_group_detail_screen.dart';

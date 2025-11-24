@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lifematch_frontend/features/team_management/widgets/custom_bottom_nav_bar.dart';
 
+import '../../group/screens/group_detail_screen.dart';
+
 class MyGroupManageScreen extends StatelessWidget {
   const MyGroupManageScreen({super.key});
 
@@ -41,14 +43,16 @@ class MyGroupManageScreen extends StatelessWidget {
             // 📩 소모임 초대
             _sectionTitle("⚙️ 내가 관리하는 소모임", "소모임 세부사항 설정"),
             const SizedBox(height: 12),
-            _groupList(isInvite: true),
+            // ⭐️ _groupList 호출 시 context 전달
+            _groupList(context, isInvite: true),
 
             const SizedBox(height: 32),
 
             // 👥 소모임 신청자
             _sectionTitle("👥 내가 참가하는 소모임", "소모임 세부사항 조회"),
             const SizedBox(height: 12),
-            _groupList(isInvite: false),
+            // ⭐️ _groupList 호출 시 context 전달
+            _groupList(context, isInvite: false),
             const SizedBox(height: 80),
           ],
         ),
@@ -61,7 +65,6 @@ class MyGroupManageScreen extends StatelessWidget {
           switch (tag) {
             case 'home':
               print('🏠 홈 이동');
-              // 홈으로 이동 (쌓인 스택 제거 후 이동 추천, 여기선 요청대로 pushNamed 사용)
               Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
               break;
             case 'chat':
@@ -112,7 +115,8 @@ class MyGroupManageScreen extends StatelessWidget {
   }
 
   // 📌 리스트 UI
-  Widget _groupList({required bool isInvite}) {
+  // ⭐️ [수정] Navigator를 사용하기 위해 BuildContext를 인자로 추가
+  Widget _groupList(BuildContext context, {required bool isInvite}) {
     return Column(
       children: List.generate(
         3,
@@ -220,7 +224,24 @@ class MyGroupManageScreen extends StatelessWidget {
               // 버튼
               ElevatedButton(
                 onPressed: () {
+                  print('${isInvite ? "설정" : "세부사항"} 버튼 클릭 - 소모임 ID: ${index + 1}');
 
+                  // ⭐️ [수정] Navigator.push를 사용하여 위젯을 직접 전달합니다.
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      // ⭐️ GroupDetailScreen 위젯 인스턴스를 직접 생성하여 전달
+                      builder: (context) => GroupDetailScreen(
+                        // isInvite 값에 따라 다른 버튼 타입을 전달한다고 가정합니다.
+                        buttonType: isInvite
+                            ? GroupDetailButtonType.acceptOrDecline // 관리자(설정) 버튼 임시로 거절수락 화면 함
+                            : GroupDetailButtonType.joinOrInquire, // 참가자(세부사항) 버튼
+
+                        // 소모임 ID도 직접 전달 가능
+                        //groupId: index + 1,
+                      ),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   elevation: 0,
