@@ -5,11 +5,12 @@ class ProfileApi {
   static const String baseUrl = "http://10.0.2.2:8000/api/user";
 
   /// ------------------------------------------
-  /// 1) 프로필 조회 (GET /api/user/{userId}/profile)
+  /// 1) 내 프로필 조회 (JWT → 백에서 user 식별)
+  /// GET /api/user/profile
   /// ------------------------------------------
   static Future<Map<String, dynamic>?> getUserProfile(
-      String userId, String accessToken) async {
-    final url = Uri.parse("$baseUrl/$userId/profile");
+      String accessToken) async {
+    final url = Uri.parse("$baseUrl/profile");
 
     try {
       final response = await http.get(
@@ -20,7 +21,7 @@ class ProfileApi {
         },
       );
 
-      print("🔵 GET /$userId/profile status: ${response.statusCode}");
+      print("🔵 GET /profile status: ${response.statusCode}");
       print("🔵 body: ${response.body}");
 
       if (response.statusCode == 200) {
@@ -36,13 +37,13 @@ class ProfileApi {
   }
 
   /// ------------------------------------------
-  /// 2) 프로필 수정 (PATCH /api/user/{userId}/profile)
+  /// 2) 프로필 수정
+  /// PATCH /api/user/profile
+  /// (JWT로 사용자 자동 식별)
   /// ------------------------------------------
   static Future<bool> updateProfile(
-      String userId,
-      String accessToken,
-      Map<String, dynamic> profileData) async {
-    final url = Uri.parse("$baseUrl/$userId/profile");
+      String accessToken, Map<String, dynamic> profileData) async {
+    final url = Uri.parse("$baseUrl/profile");
 
     try {
       final response = await http.patch(
@@ -54,7 +55,7 @@ class ProfileApi {
         body: jsonEncode(profileData),
       );
 
-      print("🟣 PATCH /$userId/profile → ${response.statusCode}");
+      print("🟣 PATCH /profile → ${response.statusCode}");
       print("🟣 request: ${jsonEncode(profileData)}");
 
       return response.statusCode == 200;
@@ -65,13 +66,14 @@ class ProfileApi {
   }
 
   /// ------------------------------------------
-  /// 3) 알림 설정 수정 (PATCH /api/user/{userId}/settings/notifications)
+  /// 3) 알림 설정 수정
+  /// PATCH /api/user/settings/notifications
   /// ------------------------------------------
   static Future<bool> updateNotificationSettings(
-      String userId,
       String accessToken,
-      Map<String, dynamic> settings) async {
-    final url = Uri.parse("$baseUrl/$userId/settings/notifications");
+      Map<String, dynamic> settings,
+      ) async {
+    final url = Uri.parse("$baseUrl/settings/notifications");
 
     try {
       final response = await http.patch(
@@ -83,7 +85,7 @@ class ProfileApi {
         body: jsonEncode(settings),
       );
 
-      print("🟡 PATCH /$userId/settings/notifications → ${response.statusCode}");
+      print("🟡 PATCH /notifications → ${response.statusCode}");
       print("🟡 request: ${jsonEncode(settings)}");
 
       return response.statusCode == 200;

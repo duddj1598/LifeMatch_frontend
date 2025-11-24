@@ -18,7 +18,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   File? _profileImage;
   final TextEditingController _nicknameController = TextEditingController();
 
-  String userId = "";
   String accessToken = "";
 
   // 활동 선호도
@@ -30,37 +29,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
+    _loadCreds();
   }
 
-  /// ---------------------------
-  /// JWT, userId 불러오고 기존 프로필 로드
-  /// ---------------------------
-  Future<void> _loadInitialData() async {
+  Future<void> _loadCreds() async {
     accessToken = await _storage.getToken() ?? "";
-    userId = await _storage.getUserId() ?? "";
 
-    if (accessToken.isEmpty || userId.isEmpty) {
-      print("❌ 사용자 인증 정보 없음");
-      return;
-    }
-
-    final profile = await ProfileApi.getUserProfile(userId, accessToken);
-    if (profile != null) {
-      _nicknameController.text = profile["user_nickname"] ?? "";
-
-      final prefs = profile["activity_preferences"];
-      if (prefs != null) {
-        preferEconomy = prefs["economy"] ?? true;
-        preferHealth = prefs["health"] ?? false;
-        preferTech = prefs["tech"] ?? true;
-        preferCulture = prefs["culture"] ?? true;
-      }
-
-      setState(() {});
-    }
+    print("🟪 Loaded AccessToken = $accessToken");
   }
 
+  // 이미지 선택
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: source);
@@ -72,12 +50,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  /// ---------------------------
-  /// 프로필 저장
-  /// ---------------------------
+  // 저장
   Future<void> _saveProfile() async {
-    if (accessToken.isEmpty || userId.isEmpty) {
-      print("❌ 저장 불가: userId/token 없음");
+    print("🟣 PATCH 요청 직전 accessToken = $accessToken");
+
+    if (accessToken.isEmpty) {
+      print("❌ 저장 불가: accessToken 없음");
       return;
     }
 
@@ -89,22 +67,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         "tech": preferTech,
         "culture": preferCulture,
       },
-      "profile_image": null,   // 이미지 업로드 기능 추후 구현
+      "profile_image": null, // 실제 파일 업로드는 별도 구현 가능
     };
 
-    print("🟦 PATCH 요청 데이터 → $body");
+    print("🟦 PATCH 요청 데이터: $body");
 
-    final success = await ProfileApi.updateProfile(
-      userId,
-      accessToken,
-      body,
-    );
+    final success = await ProfileApi.updateProfile(accessToken, body);
 
     if (success) {
       print("✅ 프로필 수정 성공!");
-      Navigator.pop(context, true);
+      Navigator.pop(context, true); // MyProfileScreen 새로고침
     } else {
       print("❌ 프로필 수정 실패");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("프로필 수정에 실패했습니다."),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
   }
 
@@ -158,6 +138,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  // 프로필 사진 영역
   Widget _buildProfileImage() {
     return Center(
       child: Column(
@@ -196,6 +177,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  // 닉네임 입력
   Widget _buildNicknameInput() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,6 +197,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  // 활동 선호도 영역
   Widget _buildPreferenceSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,6 +218,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  // 스위치 UI
   Widget _buildSwitch(String label, bool value, Function(bool) onChanged) {
     return Column(
       children: [
@@ -250,6 +234,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  // 저장 버튼
   Widget _buildSaveButton() {
     return SizedBox(
       width: double.infinity,
@@ -258,8 +243,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFE8EAF6),
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10)),
         ),
         child: const Text(
           "저장",
