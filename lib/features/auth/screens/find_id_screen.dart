@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lifematch_frontend/features/auth/services/auth_service.dart';
+import 'package:lifematch_frontend/core/constants/security_questions.dart';
 
 class FindIdScreen extends StatefulWidget {
   const FindIdScreen({super.key});
@@ -18,12 +20,7 @@ class _FindIdScreenState extends State<FindIdScreen> {
   String? _foundId;
 
   // ✅ 질문 목록
-  final List<String> _questions = [
-    '내가 다닌 초등학교 이름은?',
-    '내가 태어난 도시는?',
-    '내가 가장 좋아하는 계절은?',
-    '직접 질문 입력',
-  ];
+  final List<String> _questions = securityQuestions;
 
   @override
   void dispose() {
@@ -147,12 +144,35 @@ class _FindIdScreenState extends State<FindIdScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // 실제 서버 로직 대신 예시 데이터
-                  setState(() {
-                    _foundId = 'lifematch_user01';
-                  });
+                onPressed: () async {
+                  final question = _isCustomQuestion
+                      ? _customQuestionController.text.trim()
+                      : _selectedQuestion;
+
+                  if (question == null || question.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("질문을 선택해주세요.")),
+                    );
+                    return;
+                  }
+
+                  try {
+                    final id = await AuthService().findUserId(
+                      email: _emailController.text.trim(),
+                      securityQuestion: question,
+                      securityAnswer: _answerController.text.trim(),
+                    );
+
+                    setState(() {
+                      _foundId = id;
+                    });
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("정보가 일치하지 않습니다.")),
+                    );
+                  }
                 },
+
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF9AA8DA),
                   padding: const EdgeInsets.symmetric(vertical: 14),
