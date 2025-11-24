@@ -203,7 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // Lifestyle type 표시
           Row(
             children: [
-              const Text('💡 ', style: TextStyle(fontSize: 16)),
+              const Text('💡 ', style: TextStyle(fontSize: 10)),
               Text(
                 '"$lifestyle" 유형에게 추천되는 활동이에요!',
                 style: const TextStyle(

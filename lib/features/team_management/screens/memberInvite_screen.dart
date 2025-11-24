@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lifematch_frontend/features/home/screens/home_screen.dart';
+import 'package:lifematch_frontend/features/team_management/screens/team_management_screen.dart';
 
 // 임시 데이터 모델
 class TeamMember {
@@ -165,12 +167,10 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
                             content: Text("팀원 초대 완료 (선택된 팀원 처리 로직 필요)")),
                       );
 
-                      // 3. 다음 페이지로 이동 (현재는 주석 처리)
-                      // 다음 페이지(예: YourNextPageScreen)가 구현되면 이 부분의 주석을 해제하세요.
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(builder: (context) => const YourNextPageScreen()),
-                      // );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const TeamManagementScreen()),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF4C6DAF).withOpacity(0.7),

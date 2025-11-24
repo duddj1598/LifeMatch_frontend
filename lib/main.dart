@@ -1,5 +1,6 @@
 //패키지 임포트
 import 'package:flutter/material.dart';
+import 'package:lifematch_frontend/features/team_management/screens/memberInvite_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:lifematch_frontend/features/auth/viewmodels/auth_viewmodel.dart';
 //화면 임포트
@@ -41,7 +42,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.blue),
 
       // ✅ 앱이 시작할 때 바로 이동할 첫 화면
-      initialRoute: '/login',
+      initialRoute: '/home',
 
 
       // ✅ 네비게이션 라우트 등록
@@ -66,6 +67,7 @@ class MyApp extends StatelessWidget {
         '/my-profile': (context) => const MyProfileScreen(),
         '/edit-profile': (context) => const EditProfileScreen(),
         '/settings': (context) => const SettingsScreen(),
+        '/invite': (context) => const MemberInviteScreen(),
 
       },
 
