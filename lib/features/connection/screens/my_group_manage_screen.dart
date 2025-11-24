@@ -27,7 +27,7 @@ class MyGroupManageScreen extends StatelessWidget {
       MaterialPageRoute(
         builder: (context) => GroupDetailScreen(
           // 세부사항 조회는 참가/문의 버튼 타입을 사용합니다.
-          buttonType: GroupDetailButtonType.joinOrInquire,
+          buttonType: GroupDetailButtonType.none,
           // TODO: 소모임 ID도 전달 가능
           // groupId: groupId,
         ),
