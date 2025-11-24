@@ -66,4 +66,57 @@ class AuthService {
       throw Exception('알 수 없는 오류 발생');
     }
   }
+
+  // --- 아이디 찾기 ---
+  Future<String> findUserId({
+    required String email,
+    required String securityQuestion,
+    required String securityAnswer,
+  }) async {
+    try {
+      final response = await dio.post(
+        '/api/auth/find-id',
+        data: {
+          'user_email': email,
+          'security_question': securityQuestion,
+          'security_answer': securityAnswer,
+        },
+      );
+
+      print("아이디 찾기 응답: ${response.data}");
+
+      // FastAPI: FindIdResponse(status, user_nickname)
+      return response.data['user_nickname'];
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['detail'] ?? "아이디 찾기 실패");
+    }
+  }
+
+  // --- 비밀번호 재설정 ---
+  Future<bool> resetPassword({
+    required String loginId,
+    required String email,
+    required String securityQuestion,
+    required String securityAnswer,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await dio.put(
+        '/api/auth/reset-password',
+        data: {
+          'login_id': loginId,
+          'user_email': email,
+          'security_question': securityQuestion,
+          'security_answer': securityAnswer,
+          'new_password': newPassword,
+        },
+      );
+
+      print("비밀번호 재설정 응답: ${response.data}");
+
+      return response.statusCode == 200;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['detail'] ?? "비밀번호 재설정 실패");
+    }
+  }
 }

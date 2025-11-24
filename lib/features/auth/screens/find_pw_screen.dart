@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lifematch_frontend/features/auth/services/auth_service.dart';
+import 'package:lifematch_frontend/core/constants/security_questions.dart';
 
 class FindPwScreen extends StatefulWidget {
   const FindPwScreen({super.key});
@@ -20,12 +22,7 @@ class _FindPwScreenState extends State<FindPwScreen> {
   bool _isResetComplete = false;
 
   // ✅ 질문 목록
-  final List<String> _questions = [
-    '내가 다닌 초등학교 이름은?',
-    '내가 태어난 도시는?',
-    '내가 가장 좋아하는 계절은?',
-    '직접 질문 입력',
-  ];
+  final List<String> _questions = securityQuestions;
 
   @override
   void dispose() {
@@ -151,11 +148,37 @@ class _FindPwScreenState extends State<FindPwScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // 실제 서버 검증 로직 자리 (현재는 예시)
-                  setState(() {
-                    _isResetComplete = true;
-                  });
+                onPressed: () async {
+                  final question = _isCustomQuestion
+                      ? _customQuestionController.text.trim()
+                      : _selectedQuestion;
+
+                  if (question == null || question.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("질문을 선택해주세요.")),
+                    );
+                    return;
+                  }
+
+                  try {
+                    final success = await AuthService().resetPassword(
+                      loginId: _idController.text.trim(),
+                      email: _emailController.text.trim(),
+                      securityQuestion: question,
+                      securityAnswer: _answerController.text.trim(),
+                      newPassword: _newPwController.text.trim(),
+                    );
+
+                    if (success) {
+                      setState(() {
+                        _isResetComplete = true;
+                      });
+                    }
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("정보가 일치하지 않습니다.")),
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF9AA8DA),

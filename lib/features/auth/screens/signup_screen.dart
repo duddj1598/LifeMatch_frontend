@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:lifematch_frontend/features/auth/viewmodels/auth_viewmodel.dart';
+import 'package:lifematch_frontend/core/constants/security_questions.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -38,12 +39,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   String? _selectedQuestion;
 
-  final List<String> _questions = [
-    '가장 기억에 남는 추억의 장소는?',
-    '자신의 보물 제1호는?',
-    '가장 좋아하는 반려동물의 이름은?',
-    '직접 질문 입력',
-  ];
+  final List<String> _questions = securityQuestions;
+
 
   @override
   void dispose() {
