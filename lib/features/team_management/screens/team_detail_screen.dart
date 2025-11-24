@@ -37,20 +37,19 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   void _handleBottomTap(String tag) {
     switch (tag) {
       case 'home':
-        print('홈 이동');
-        Navigator.pop(context);
-        break;
-      case 'connection':
-        print('소모임 연결');
+        Navigator.pushReplacementNamed(context, '/home');
         break;
       case 'chat':
-        print('채팅 탭 이동');
+        Navigator.pushReplacementNamed(context, '/chat');
+        break;
+      case 'connection':
+        Navigator.pushReplacementNamed(context, '/my-group-manage');
         break;
       case 'bell':
-        print('알림 탭 이동');
+        Navigator.pushReplacementNamed(context, '/notification');
         break;
       case 'profile':
-        print('프로필 탭 이동');
+        Navigator.pushReplacementNamed(context, '/my-profile');
         break;
     }
   }

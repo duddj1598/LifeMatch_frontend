@@ -39,14 +39,14 @@ class MyGroupManageScreen extends StatelessWidget {
             const SizedBox(height: 28),
 
             // 📩 소모임 초대
-            _sectionTitle("📩 소모임 초대", "받은 초대장"),
+            _sectionTitle("⚙️ 내가 관리하는 소모임", "소모임 세부사항 설정"),
             const SizedBox(height: 12),
             _groupList(isInvite: true),
 
             const SizedBox(height: 32),
 
             // 👥 소모임 신청자
-            _sectionTitle("👥 내 소모임 신청자", "가입 대기 중"),
+            _sectionTitle("👥 내가 참가하는 소모임", "소모임 세부사항 조회"),
             const SizedBox(height: 12),
             _groupList(isInvite: false),
             const SizedBox(height: 80),
