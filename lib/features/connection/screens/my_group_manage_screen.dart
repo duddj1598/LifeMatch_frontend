@@ -91,24 +91,18 @@ class MyGroupManageScreen extends StatelessWidget {
         onTabSelected: (tag) {
           switch (tag) {
             case 'home':
-              print('🏠 홈 이동');
-              Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+              Navigator.pushReplacementNamed(context, '/home');
               break;
             case 'chat':
-              print('💬 채팅 탭');
-              // Navigator.pushNamed(context, '/chat'); // 라우트 정의 필요
+              Navigator.pushReplacementNamed(context, '/chat');
               break;
             case 'connection':
-              print('🔗 소모임 연결');
-              // 현재 화면이므로 이동 로직 없음
               break;
             case 'bell':
-              print('🔔 알림 탭');
-              // Navigator.pushNamed(context, '/notification'); // 라우트 정의 필요
+              Navigator.pushReplacementNamed(context, '/notification');
               break;
             case 'profile':
-              print('👤 프로필 탭');
-              // Navigator.pushNamed(context, '/my-profile'); // 라우트 정의 필요
+              Navigator.pushReplacementNamed(context, '/my-profile');
               break;
           }
         },
