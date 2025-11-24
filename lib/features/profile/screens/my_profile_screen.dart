@@ -14,9 +14,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   final StorageService _storage = StorageService();
 
   String accessToken = "";
-  String userId = "";
 
-  // 실제 데이터
   String _nickname = "닉네임";
   String _email = "";
   String _lifestyleType = "";
@@ -31,17 +29,15 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
   Future<void> _loadProfile() async {
     accessToken = await _storage.getToken() ?? "";
-    userId = await _storage.getUserId() ?? "";
 
     print("🟣 Loaded accessToken = $accessToken");
-    print("🟣 Loaded userId = $userId");
 
-    if (accessToken.isEmpty || userId.isEmpty) {
-      print("❌ userId 또는 accessToken 없음");
+    if (accessToken.isEmpty) {
+      print("❌ accessToken 없음");
       return;
     }
 
-    final data = await ProfileApi.getUserProfile(userId, accessToken);
+    final data = await ProfileApi.getUserProfile(accessToken);
 
     if (data != null) {
       setState(() {
@@ -67,7 +63,6 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     if (label == "프로필 수정") {
       final result = await Navigator.pushNamed(context, "/edit-profile");
       if (result == true) {
-        print("🔄 프로필 수정됨 → 새로고침");
         await _loadProfile();
       }
     } else if (label == "알림 설정") {
@@ -118,14 +113,20 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     );
   }
 
+  // ==========================================================
+  // UI
+  // ==========================================================
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
 
       appBar: AppBar(
-        title: const Text("마이페이지",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+        title: const Text(
+          "마이페이지",
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
       ),
@@ -136,82 +137,15 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
           children: [
             const SizedBox(height: 10),
 
-            // 프로필 정보 표시
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: Colors.grey.shade300,
-                  child: const Icon(Icons.person, size: 40, color: Colors.grey),
-                ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(_nickname,
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.w600)),
-                    Text(_email, style: TextStyle(color: Colors.grey.shade600)),
-                  ],
-                ),
-                const Spacer(),
-              ],
-            ),
+            _buildProfileHeader(),
 
             const SizedBox(height: 25),
 
-            // 라이프스타일 카드
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue.shade200),
-              ),
-              child: Column(
-                children: [
-                  const Text("라이프스타일 유형",
-                      style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  const SizedBox(height: 6),
-                  Text("“$_lifestyleType”",
-                      style: const TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 8),
-                  Text(_keywords,
-                      textAlign: TextAlign.center,
-                      style:
-                      const TextStyle(fontSize: 13, color: Colors.black87)),
-                  const SizedBox(height: 10),
-                  Text(_description,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                          fontSize: 13, height: 1.4, color: Colors.black87)),
-                ],
-              ),
-            ),
+            _buildLifestyleCard(),
 
             const SizedBox(height: 20),
 
-            // 설정 메뉴
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("[ 설정 ]",
-                      style:
-                      TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                  const SizedBox(height: 10),
-                  _settingItem("프로필 수정"),
-                  _settingItem("알림 설정"),
-                  _settingItem("로그아웃"),
-                ],
-              ),
-            ),
+            _buildSettingsCard(),
 
             const SizedBox(height: 80),
           ],
@@ -221,9 +155,83 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
       bottomNavigationBar: CustomBottomNavBar(
         selectedTag: 'profile',
         onTabSelected: (tag) {
-          if (tag == 'profile') return;
-          Navigator.pushNamed(context, '/$tag');
+          if (tag != 'profile') Navigator.pushNamed(context, '/$tag');
         },
+      ),
+    );
+  }
+
+  // ---------------------- UI 위젯들 ----------------------
+
+  Widget _buildProfileHeader() {
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 30,
+          backgroundColor: Colors.grey.shade300,
+          child: const Icon(Icons.person, size: 40, color: Colors.grey),
+        ),
+        const SizedBox(width: 16),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(_nickname,
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.w600)),
+            Text(_email, style: TextStyle(color: Colors.grey.shade600)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLifestyleCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Column(
+        children: [
+          const Text("라이프스타일 유형",
+              style: TextStyle(fontSize: 12, color: Colors.grey)),
+          const SizedBox(height: 6),
+          Text("“$_lifestyleType”",
+              style:
+              const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          Text(_keywords,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13, color: Colors.black87)),
+          const SizedBox(height: 10),
+          Text(_description,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontSize: 13, height: 1.4, color: Colors.black87)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("[ 설정 ]",
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+          const SizedBox(height: 10),
+          _settingItem("프로필 수정"),
+          _settingItem("알림 설정"),
+          _settingItem("로그아웃"),
+        ],
       ),
     );
   }
