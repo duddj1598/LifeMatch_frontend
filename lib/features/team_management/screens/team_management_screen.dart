@@ -1,26 +1,170 @@
 import 'package:flutter/material.dart';
-// ⭐️ 하단 내비게이션 바 위젯 임포트
 import 'package:lifematch_frontend/features/team_management/widgets/custom_bottom_nav_bar.dart';
 
-// (MyGroupManageScreen이 라우트로 등록되어 있으므로 별도의 import는 필요하지 않습니다.)
+// ------------------------------------------------------------------
+// ⭐️ [유지] Group Detail Data Model (GroupService와 동일하다고 가정)
+// ------------------------------------------------------------------
 
+class GroupDetail {
+  final String groupId;
+  String groupName;
+  String groupTopic;
+  String groupDescription;
+  int currentCapacity;
+  int maxCapacity;
+  List<String> members; // 멤버 닉네임 리스트를 가정
+
+  GroupDetail({
+    required this.groupId,
+    required this.groupName,
+    required this.groupTopic,
+    required this.groupDescription,
+    required this.currentCapacity,
+    required this.maxCapacity,
+    required this.members,
+  });
+}
+
+// ------------------------------------------------------------------
+// ⭐️ [유지] Mock Group Service (API 실패 시 대비용)
+// ------------------------------------------------------------------
+class MockGroupService {
+  Future<GroupDetail> getGroupDetail(String groupId) async {
+    print("API CALL: Group ID $groupId의 상세 정보 요청 (Mock)");
+    await Future.delayed(const Duration(milliseconds: 700)); // 로딩 지연
+
+    // groupId에 따라 다른 데이터를 반환한다고 가정
+    if (groupId.startsWith('invite-')) {
+      return GroupDetail(
+        groupId: groupId,
+        groupName: "초대받은 맛집탐방 모임",
+        groupTopic: "맛집 탐방",
+        groupDescription: "서울의 숨겨진 맛집을 같이 탐방하며 정보를 공유해요!",
+        currentCapacity: 3,
+        maxCapacity: 5,
+        members: ["맛잘알(리더)", "미식가", "배고픈자"],
+      );
+    }
+
+    // TeamDetailScreen에서 생성된 그룹 (더미 데이터)
+    // ⭐️ 이 데이터는 initialGroupDetail이 없을 때만 사용됩니다.
+    return GroupDetail(
+      groupId: groupId,
+      groupName: "기본 Mock 코딩 스터디", // 이름 변경
+      groupTopic: "코딩 스터디",
+      groupDescription: "Flutter, Spring Boot 등 최신 기술을 함께 공부해요.",
+      currentCapacity: 1, // 개설자만 있다고 가정
+      maxCapacity: 5,
+      members: ["개설자(나)"],
+    );
+  }
+}
+
+// ------------------------------------------------------------------
+// ⭐️ [수정] TeamManagementScreen 위젯 - initialGroupDetail 매개변수 추가
+// ------------------------------------------------------------------
 class TeamManagementScreen extends StatefulWidget {
-  const TeamManagementScreen({super.key});
+  final String groupId;
+  final GroupDetail? initialGroupDetail; // ⭐️ 생성 시 받은 초기 데이터
+
+  const TeamManagementScreen({
+    super.key,
+    required this.groupId,
+    this.initialGroupDetail, // ⭐️ 생성자 수정
+  });
 
   @override
   State<TeamManagementScreen> createState() => _TeamManagementScreenState();
 }
 
 class _TeamManagementScreenState extends State<TeamManagementScreen> {
-  // ⭐️ [추가] 모임 이름 수정 상태
+  // ⭐️ [유지] 서비스 인스턴스
+  final MockGroupService _groupService = MockGroupService();
+
+  // ⭐️ [유지] 로딩 상태
+  bool _isLoading = true;
+
+  // ⭐️ [유지] 모임 상세 정보 객체
+  late GroupDetail _groupDetail;
+
+  // ⭐️ [유지] 모임 수정 상태
   bool _isNameEditing = false;
-  // ⭐️ [기존] 모임 주제 수정 상태
   bool _isTopicEditing = false;
-  // ⭐️ [기존] 모임 설명 수정 상태
   bool _isDescriptionEditing = false;
+
+  // 텍스트 필드 컨트롤러
+  final TextEditingController _groupNameController = TextEditingController();
+  final TextEditingController _groupTopicController = TextEditingController();
+  final TextEditingController _groupDescriptionController = TextEditingController();
+
+  // 예시 데이터 - 이제 _groupDetail에서 초기화됨
+  String _groupName = "로딩 중...";
+  String _groupTopic = "로딩 중...";
+  String _groupDescription = "로딩 중...";
+  final List<String> _members = [];
+
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchGroupDetail(); // ⭐️ 데이터 로딩 함수 호출
+  }
+
+  // ⭐️ [수정] 모임 상세 정보를 서버에서 가져오는 함수 (initialGroupDetail 우선 사용)
+  Future<void> _fetchGroupDetail() async {
+    try {
+      GroupDetail detail;
+
+      if (widget.initialGroupDetail != null) {
+        // ⭐️⭐️⭐️ 1. initialGroupDetail이 있으면 API 호출 없이 이 데이터를 사용합니다. ⭐️⭐️⭐️
+        detail = widget.initialGroupDetail!;
+        print("✅ TeamManagementScreen: 전달받은 초기 데이터로 구성함.");
+      } else {
+        // ⭐️ 2. initialGroupDetail이 없으면 (예: 라우트로 직접 진입) Mock API를 호출합니다.
+        detail = await _groupService.getGroupDetail(widget.groupId);
+      }
+
+      setState(() {
+        _groupDetail = detail;
+
+        // 컨트롤러와 초기값 설정
+        _groupName = detail.groupName;
+        _groupTopic = detail.groupTopic;
+        _groupDescription = detail.groupDescription;
+        _members.clear();
+        _members.addAll(detail.members);
+
+        _groupNameController.text = _groupName;
+        // Mock 데이터는 groupTopic이 없으므로 임시로 '주제 미정'을 사용합니다.
+        _groupTopicController.text = _groupTopic.isNotEmpty ? _groupTopic : "주제 미정";
+        _groupDescriptionController.text = _groupDescription;
+
+        _isLoading = false; // 로딩 완료
+      });
+    } catch (e) {
+      print("❌ 그룹 상세 정보 로딩 실패: $e");
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('모임 정보를 불러오는 데 실패했습니다.')),
+      );
+    }
+  }
+
+
+  @override
+  void dispose() {
+    // ⭐️ 컨트롤러 해제
+    _groupNameController.dispose();
+    _groupTopicController.dispose();
+    _groupDescriptionController.dispose();
+    super.dispose();
+  }
 
   // ⭐️ 하단바 이동 로직
   void _handleBottomTap(String tag) {
+    // ... (기존 로직 유지)
     switch (tag) {
       case 'home':
         Navigator.pushReplacementNamed(context, '/home');
@@ -40,44 +184,25 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
     }
   }
 
-  // ⭐️ [추가] 완료 버튼 클릭 시 MyGroupManageScreen으로 이동하는 함수
+  // ⭐️ 완료 버튼 클릭 시 MyGroupManageScreen으로 이동하는 함수
   void _onCompletePressed() {
-    print("✅ 소모임 설정 완료 버튼 클릭");
+    print("✅ 소모임 설정 완료 버튼 클릭, MyGroupManageScreen으로 이동");
     // '/my-group-manage' 라우트로 현재 화면을 대체하며 이동합니다.
     Navigator.pushReplacementNamed(context, '/my-group-manage');
   }
 
-  // 예시 데이터 - 실제로는 서버에서 데이터를 가져와야 합니다.
-  String _groupName = "[소모임 이름]";
-  String _groupTopic = "모임 주제 기입";
-  String _groupDescription = "모임 설명 기입";
-  final List<String> _members = ["닉네임", "닉네임", "닉네임", "닉네임", "닉네임"]; // 3/5 멤버를 가정
-
-  // 텍스트 필드 컨트롤러
-  final TextEditingController _groupNameController = TextEditingController();
-  final TextEditingController _groupTopicController = TextEditingController();
-  final TextEditingController _groupDescriptionController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    // ⭐️ 컨트롤러 초기화
-    _groupNameController.text = _groupName;
-    _groupTopicController.text = _groupTopic;
-    _groupDescriptionController.text = _groupDescription;
-  }
-
-  @override
-  void dispose() {
-    // ⭐️ 컨트롤러 해제
-    _groupNameController.dispose();
-    _groupTopicController.dispose();
-    _groupDescriptionController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF6B7AA1)),
+        ),
+      );
+    }
+
+    // ⭐️ 로딩이 완료된 후 본문 위젯 빌드
     return Scaffold(
       backgroundColor: Colors.grey[50], // 밝은 회색 배경
       appBar: AppBar(
@@ -186,7 +311,7 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
             _buildMemberListCard(),
             const SizedBox(height: 30), // 하단 여백 조정
 
-            // ⭐️ [추가] 완료 버튼 영역
+            // ⭐️ 완료 버튼 영역
             _buildCompletionButton(),
             const SizedBox(height: 80), // 하단바와의 최종 여백
           ],
@@ -201,7 +326,7 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
   }
 
   // -------------------------------
-  // 🟣 [추가] 완료 버튼 위젯
+  // 🟣 완료 버튼 위젯
   // -------------------------------
   Widget _buildCompletionButton() {
     return SizedBox(
@@ -411,16 +536,17 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 "팀원 목록",
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
               ),
+              // ⭐️ 로딩된 정보로 인원 표시
               Text(
-                "3/${_members.length}", // 현재 3명 / 전체 5명으로 가정 (예시)
+                "${_groupDetail.currentCapacity}/${_groupDetail.maxCapacity}",
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.grey[600],
@@ -439,9 +565,9 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
             icon: Icons.person_add_alt_1_outlined,
             isInvite: true,
             onTap: () {
-              print("팀원 초대 클릭");
-              // 팀원 초대 로직 또는 화면 이동
-              Navigator.pushNamed(context, '/invite');
+              print("팀원 초대 클릭 - /invite로 이동 (Group ID: ${widget.groupId})");
+              // 팀원 초대 화면으로 이동 시 groupId 전달
+              Navigator.pushNamed(context, '/invite', arguments: widget.groupId);
             },
           ),
 
@@ -493,7 +619,7 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: isInvite ? FontWeight.bold : FontWeight.normal,
-                color: isInvite ? Colors.blue[700] : Colors.black87,
+                color: isInvite ? const Color(0xFF6B7AA1) : Colors.black87,
               ),
             ),
           ],

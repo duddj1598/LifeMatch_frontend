@@ -13,12 +13,12 @@ enum GroupDetailButtonType {
 // 3. ⭐️ GroupDetailScreen (기존과 동일)
 class GroupDetailScreen extends StatefulWidget {
   final GroupDetailButtonType buttonType;
-  // final String groupId;
+  final String groupId;
 
   const GroupDetailScreen({
     super.key,
     required this.buttonType,
-    // required this.groupId,
+    required this.groupId,
   });
 
   @override

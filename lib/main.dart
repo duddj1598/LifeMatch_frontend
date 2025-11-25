@@ -54,10 +54,7 @@ class MyApp extends StatelessWidget {
 
         '/style_test': (context) => const LifestyleTestScreen(),
         '/my-group-manage': (context) => const MyGroupManageScreen(),
-        //버튼타입 매개변수로 입력해야 함. buttonType: GroupDetailButtonType.버튼타입(join, none, joinOrInquire, acceptOrDecline 중 택1)
-        '/group_detail': (context) => GroupDetailScreen(
-          buttonType: GroupDetailButtonType.joinOrInquire,
-        ),
+
 
         '/notification': (context) => const NotificationScreen(),
         '/chat': (context) => const ChatScreen(),

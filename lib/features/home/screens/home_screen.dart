@@ -228,6 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     MaterialPageRoute(
                       builder: (context) => GroupDetailScreen(
                         buttonType: GroupDetailButtonType.joinOrInquire,
+                        groupId: item.groupId,
                       ),
                     ),
                   );

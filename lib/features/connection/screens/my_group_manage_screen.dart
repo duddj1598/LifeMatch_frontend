@@ -10,18 +10,18 @@ class MyGroupManageScreen extends StatelessWidget {
   const MyGroupManageScreen({super.key});
 
   // ⭐️ [추가] TeamManagementScreen으로 이동하는 함수
-  void _navigateToTeamManagement(BuildContext context, int groupId) {
+  void _navigateToTeamManagement(BuildContext context, String groupId) {
     Navigator.push(
       context,
       MaterialPageRoute(
         // TODO: 실제 소모임 ID를 TeamManagementScreen에 전달해야 합니다.
-        builder: (context) => const TeamManagementScreen(),
+        builder: (context) => TeamManagementScreen(groupId: groupId),
       ),
     );
   }
 
   // ⭐️ [추가] GroupDetailScreen으로 이동하는 함수
-  void _navigateToGroupDetail(BuildContext context, int groupId) {
+  void _navigateToGroupDetail(BuildContext context, String groupId) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -29,7 +29,7 @@ class MyGroupManageScreen extends StatelessWidget {
           // 세부사항 조회는 참가/문의 버튼 타입을 사용합니다.
           buttonType: GroupDetailButtonType.none,
           // TODO: 소모임 ID도 전달 가능
-          // groupId: groupId,
+          groupId: groupId,
         ),
       ),
     );
@@ -141,7 +141,7 @@ class MyGroupManageScreen extends StatelessWidget {
       children: List.generate(
         3,
             (index) {
-          final groupId = index + 1; // 임시 소모임 ID
+          final String groupId = isInvite ? 'manage_id_$index' : 'joined_id_$index';
 
           // ⭐️ [수정] onPressed 로직 분리 및 네비게이션 함수 연결
           void onPressedHandler() {
