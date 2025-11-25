@@ -1,5 +1,6 @@
 //패키지 임포트
 import 'package:flutter/material.dart';
+import 'package:lifematch_frontend/features/team_management/screens/memberInvite_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:lifematch_frontend/features/auth/viewmodels/auth_viewmodel.dart';
 //화면 임포트
@@ -9,7 +10,7 @@ import 'features/auth/screens/find_id_screen.dart';
 import 'features/auth/screens/find_pw_screen.dart';
 import 'features/lifestyle_test/screens/lifestyle_test_screen.dart';
 import 'features/home/screens/home_screen.dart';
-import 'features/connection/my_group_manage_screen.dart';
+import 'features/connection/screens/my_group_manage_screen.dart';
 import 'features/group/screens/group_detail_screen.dart';
 import 'package:lifematch_frontend/features/chat/screens/chat_screen.dart';
 import 'package:lifematch_frontend/features/chat/screens/chat_group_detail_screen.dart';
@@ -66,6 +67,7 @@ class MyApp extends StatelessWidget {
         '/my-profile': (context) => const MyProfileScreen(),
         '/edit-profile': (context) => const EditProfileScreen(),
         '/settings': (context) => const SettingsScreen(),
+        '/invite': (context) => const MemberInviteScreen(),
 
       },
 

@@ -155,7 +155,22 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
       bottomNavigationBar: CustomBottomNavBar(
         selectedTag: 'profile',
         onTabSelected: (tag) {
-          if (tag != 'profile') Navigator.pushNamed(context, '/$tag');
+          switch (tag) {
+            case 'home':
+              Navigator.pushReplacementNamed(context, '/home');
+              break;
+            case 'chat':
+              Navigator.pushReplacementNamed(context, '/chat');
+              break;
+            case 'connection':
+              Navigator.pushReplacementNamed(context, '/my-group-manage');
+              break;
+            case 'bell':
+              Navigator.pushReplacementNamed(context, '/notification');
+              break;
+            case 'profile':
+              break;
+          }
         },
       ),
     );

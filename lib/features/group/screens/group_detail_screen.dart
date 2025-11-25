@@ -39,6 +39,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
         break;
       case 'chat':
         print('💬 채팅 탭');
+        Navigator.pushNamed(context, '/chat');
       case 'connection':
         print('🔗 소모임 연결');
         Navigator.pushNamed(context, '/my-group-manage');
@@ -50,6 +51,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
         break;
       case 'profile':
         print('👤 프로필 탭');
+        Navigator.pushNamed(context, '/my-profile');
         break;
     }
   }

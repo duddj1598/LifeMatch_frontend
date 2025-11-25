@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../group/screens/group_detail_screen.dart';
 import '../widgets/custom_bottom_nav_bar.dart'; // 하단바 위젯 import
 
 class TeamDetailScreen extends StatefulWidget {
@@ -37,20 +38,19 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   void _handleBottomTap(String tag) {
     switch (tag) {
       case 'home':
-        print('홈 이동');
-        Navigator.pop(context);
-        break;
-      case 'connection':
-        print('소모임 연결');
+        Navigator.pushReplacementNamed(context, '/home');
         break;
       case 'chat':
-        print('채팅 탭 이동');
+        Navigator.pushReplacementNamed(context, '/chat');
+        break;
+      case 'connection':
+        Navigator.pushReplacementNamed(context, '/my-group-manage');
         break;
       case 'bell':
-        print('알림 탭 이동');
+        Navigator.pushReplacementNamed(context, '/notification');
         break;
       case 'profile':
-        print('프로필 탭 이동');
+        Navigator.pushReplacementNamed(context, '/my-profile');
         break;
     }
   }
@@ -101,9 +101,9 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
             // 탭에 따라 UI 변경
             if(isCreateSelected)
-              _buildCreateForm()
+              _buildCreateForm(context) // ⭐️ context 전달
             else
-              _buildJoinList() // ⭐️ "더보기" 기능이 추가된 _buildJoinList
+              _buildJoinList(context) // ⭐️ context 전달
 
           ],
         ),
@@ -113,8 +113,9 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
-  // --- "소모임 개설" 폼 (기존과 동일) ---
-  Widget _buildCreateForm() {
+  // --- "소모임 개설" 폼 (수정) ---
+  // ⭐️ context 인자 추가
+  Widget _buildCreateForm(BuildContext context) {
     return Column(
       children: [
         const Text(
@@ -181,7 +182,13 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () {},
+            // ⭐️ [수정] onPressed에 /invite 라우트로 이동하는 로직 추가
+            onPressed: () {
+              print('소모임 개설 - 다음 버튼 클릭: /invite로 이동');
+              // Navigator.pushNamedAndRemoveUntil(context, '/invite', (route) => false);
+              // 현재 화면 위에 새 화면을 쌓아 올립니다.
+              Navigator.pushNamed(context, '/invite');
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF9AA8DA),
               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -199,8 +206,9 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
-  // --- "소모임 참여" 목록 (⭐️ 2. ListView.builder로 수정) ---
-  Widget _buildJoinList() {
+  // --- "소모임 참여" 목록 (수정) ---
+  // ⭐️ context 인자 추가
+  Widget _buildJoinList(BuildContext context) {
     return Column(
       children: [
         // 검색창
@@ -223,6 +231,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
               // ⭐️ 목록 아이템
               final group = _groupList[index];
               return _buildGroupListItem(
+                context, // ⭐️ context 전달
                 group['title']!,
                 group['topic']!,
               );
@@ -266,8 +275,9 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   }
 
 
-// 🔹 소모임 목록 아이템 위젯 (⭐️ 버튼 로직 수정)
-  Widget _buildGroupListItem(String title, String topic) {
+// 🔹 소모임 목록 아이템 위젯 (수정)
+  // ⭐️ context 인자 추가
+  Widget _buildGroupListItem(BuildContext context, String title, String topic) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -324,16 +334,18 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
           // ⭐️ 세부정보 버튼
           ElevatedButton(
-            // ⭐️ 1. onPressed 로직 수정
             onPressed: () {
-              // ⭐️ 2. 디버그 콘솔에 메시지 출력
-              print("페이지 이동! (세부정보: $title)");
-
-              // ⭐️ 3. (선택사항) 사용자에게 스낵바 메시지 표시
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text("$title 세부정보 페이지로 이동 (구현 예정)"),
-                  duration: const Duration(seconds: 1),
+              // ⭐️ Navigator.pushNamed 대신 Navigator.push를 사용하여 GroupDetailScreen으로 이동
+              print("페이지 이동! (세부정보: $title) - GroupDetailScreen으로 이동");
+              // 이 부분은 이전 요청에 따라 수정하지 않았습니다.
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => GroupDetailScreen(
+                    // ⭐️ 요청하신 대로 joinOrInquire 타입을 직접 전달
+                    buttonType: GroupDetailButtonType.joinOrInquire,
+                    // 그룹 ID 등 필요한 다른 매개변수도 여기에 추가하세요.
+                  ),
                 ),
               );
             },
@@ -352,7 +364,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
-  // ⭐️ 4. "더보기" 버튼 위젯 및 로직 추가 (MemberInviteScreen 참고)
+  // ⭐️ 4. "더보기" 버튼 위젯 및 로직 추가 (기존과 동일)
   Widget _buildGroupMoreButton() {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
