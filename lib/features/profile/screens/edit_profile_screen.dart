@@ -20,12 +20,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   String accessToken = "";
 
-  // 활동 선호도
-  bool preferEconomy = true;
-  bool preferHealth = false;
-  bool preferTech = true;
-  bool preferCulture = true;
-
   @override
   void initState() {
     super.initState();
@@ -61,12 +55,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     final body = {
       "user_nickname": _nicknameController.text,
-      "activity_preferences": {
-        "economy": preferEconomy,
-        "health": preferHealth,
-        "tech": preferTech,
-        "culture": preferCulture,
-      },
       "profile_image": null, // 실제 파일 업로드는 별도 구현 가능
     };
 
@@ -126,9 +114,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             const SizedBox(height: 30),
 
             _buildNicknameInput(),
-            const SizedBox(height: 28),
-
-            _buildPreferenceSection(),
             const SizedBox(height: 40),
 
             _buildSaveButton(),
@@ -193,43 +178,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           ),
         ),
-      ],
-    );
-  }
-
-  // 활동 선호도 영역
-  Widget _buildPreferenceSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("활동 선호도",
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 16),
-
-        _buildSwitch("소비 · 경제", preferEconomy,
-                (v) => setState(() => preferEconomy = v)),
-        _buildSwitch("생활습관 · 건강", preferHealth,
-                (v) => setState(() => preferHealth = v)),
-        _buildSwitch("기술", preferTech,
-                (v) => setState(() => preferTech = v)),
-        _buildSwitch("여가 · 문화", preferCulture,
-                (v) => setState(() => preferCulture = v)),
-      ],
-    );
-  }
-
-  // 스위치 UI
-  Widget _buildSwitch(String label, bool value, Function(bool) onChanged) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label),
-            Switch(value: value, onChanged: onChanged),
-          ],
-        ),
-        Divider(color: Colors.grey.shade300),
       ],
     );
   }
