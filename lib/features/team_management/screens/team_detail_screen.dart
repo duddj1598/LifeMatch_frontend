@@ -533,8 +533,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         MaterialPageRoute(
           builder: (context) => MemberInviteScreen(
             groupId: newGroupDetail.groupId,
-            // ⭐️ 초기 데이터를 MemberInviteScreen으로 전달
             initialGroupDetail: newGroupDetail,
+            selectedCategory: widget.selectedCategory,
           ),
         ),
       );
