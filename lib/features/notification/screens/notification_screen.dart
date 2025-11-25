@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lifematch_frontend/features/team_management/widgets/custom_bottom_nav_bar.dart';
 import 'package:lifematch_frontend/features/group/screens/group_detail_screen.dart';
+import 'package:lifematch_frontend/features/notification/services/notification_service.dart'; // 🔥 여기만 수정
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -11,60 +12,34 @@ class NotificationScreen extends StatefulWidget {
 
 class _NotificationScreenState extends State<NotificationScreen>
     with SingleTickerProviderStateMixin {
-
   late TabController _tabController;
 
-  // --- 1. 소모임 초대 데이터 (나에게 온 초대) ---
-  final List<Map<String, String>> _myInvites = [
-    {
-      "groupId": "invite-id-1", // ⭐️ groupId 추가
-      "groupName": "서울 맛집 탐방",
-      "leader": "맛잘알",
-      "message": "회원님의 프로필을 보고 저희 모임에 딱 맞을 것 같아 초대합니다!",
-      "time": "10분 전"
-    },
-    {
-      "groupId": "invite-id-2", // ⭐️ groupId 추가
-      "groupName": "주말 등산 크루",
-      "leader": "산타할아버지",
-      "message": "이번 주 관악산 등반 함께 하실래요?",
-      "time": "1시간 전"
-    },
-    {
-      "groupId": "invite-id-3", // ⭐️ groupId 추가
-      "groupName": "영어 회화 스터디",
-      "leader": "EnglishMaster",
-      "message": "초급반 인원 충원 중입니다. 관심 있으시면 수락해주세요.",
-      "time": "어제"
-    },
-  ];
+  final NotificationService _service = NotificationService();
 
-  // --- 2. 소모임 신청자 데이터 (내 모임에 들어온 신청) ---
-  final List<Map<String, String>> _groupApplicants = [
-    {
-      "userName": "김철수",
-      "targetGroup": "코딩 스터디",
-      "message": "열심히 참여하겠습니다! 파이썬 기초 공부 중입니다.",
-      "time": "방금 전"
-    },
-    {
-      "userName": "이영희",
-      "targetGroup": "코딩 스터디",
-      "message": "안녕하세요, 모임 분위기가 좋아 보여서 신청합니다.",
-      "time": "30분 전"
-    },
-    {
-      "userName": "박지성",
-      "targetGroup": "주말 축구단",
-      "message": "포지션은 미드필더입니다. 매주 참석 가능합니다.",
-      "time": "2시간 전"
-    },
-  ];
+  List<dynamic> _myInvites = [];
+  List<dynamic> _groupApplicants = [];
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadNotifications();
+  }
+
+  Future<void> _loadNotifications() async {
+    try {
+      final data = await _service.getNotifications();
+
+      setState(() {
+        _myInvites = data["invites"] ?? [];
+        _groupApplicants = data["applicants"] ?? [];
+        _loading = false;
+      });
+    } catch (e) {
+      print("❌ 알림 불러오기 오류: $e");
+      setState(() => _loading = false);
+    }
   }
 
   @override
@@ -76,20 +51,17 @@ class _NotificationScreenState extends State<NotificationScreen>
   void _handleBottomTap(String tag) {
     switch (tag) {
       case 'home':
-        print('🏠 홈 이동');
         Navigator.pushNamed(context, '/home');
         break;
       case 'chat':
-        print('💬 채팅 탭');
         Navigator.pushNamed(context, '/chat');
+        break;
       case 'connection':
-        print('🔗 소모임 연결');
         Navigator.pushNamed(context, '/my-group-manage');
         break;
       case 'bell':
         break;
       case 'profile':
-        print('👤 프로필 탭');
         Navigator.pushNamed(context, '/my-profile');
         break;
     }
@@ -97,6 +69,12 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -104,8 +82,8 @@ class _NotificationScreenState extends State<NotificationScreen>
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-            onPressed: () => Navigator.pushReplacementNamed(context, '/home')
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
         ),
         title: const Text(
           "알림",
@@ -120,20 +98,18 @@ class _NotificationScreenState extends State<NotificationScreen>
           indicatorWeight: 3,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           tabs: const [
-            Tab(text: "소모임 초대"), // Tab 1
-            Tab(text: "소모임 신청자"), // Tab 2
+            Tab(text: "소모임 초대"),
+            Tab(text: "소모임 신청자"),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildInviteTab(),    // 초대 탭 화면
-          _buildApplicantTab(), // 신청자 탭 화면
+          _buildInviteTab(),
+          _buildApplicantTab(),
         ],
       ),
-
-      // ⭐️ 수정: SafeArea 제거 (여백 삭제)
       bottomNavigationBar: CustomBottomNavBar(
         selectedTag: 'bell',
         onTabSelected: _handleBottomTap,
@@ -141,7 +117,9 @@ class _NotificationScreenState extends State<NotificationScreen>
     );
   }
 
-  // --- [탭 1] 소모임 초대 리스트 ---
+  // ---------------------------------------------------------
+  // 🔹 [탭 1] 나에게 온 초대
+  // ---------------------------------------------------------
   Widget _buildInviteTab() {
     if (_myInvites.isEmpty) return _buildEmptyState("받은 초대가 없습니다.");
 
@@ -151,23 +129,25 @@ class _NotificationScreenState extends State<NotificationScreen>
       separatorBuilder: (context, index) => const SizedBox(height: 20),
       itemBuilder: (context, index) {
         final item = _myInvites[index];
-        final String groupId = item['groupId'] ?? 'default-invite-id'; // ⭐️ groupId 추출
 
         return _buildNotificationCard(
           icon: Icons.mark_email_unread_rounded,
-          iconColor: const Color(0xFFFF9800), // 주황색 (초대 느낌)
-          title: item['groupName']!,
-          subtitle: "보낸사람: ${item['leader']}",
-          message: item['message']!,
-          time: item['time']!,
-          isApplicant: false, // 초대 모드
-          groupId: groupId, // ⭐️ groupId 전달
+          iconColor: const Color(0xFFFF9800),
+          title: item["group_name"] ?? "",
+          subtitle: "보낸 사람: ${item["leader_name"] ?? ""}",
+          message: item["message"] ?? "",
+          time: item["created_at"] ?? "",
+          isApplicant: false,
+          actionId: item["action_id"],
+          groupId: item["group_id"],
         );
       },
     );
   }
 
-  // --- [탭 2] 소모임 신청자 리스트 ---
+  // ---------------------------------------------------------
+  // 🔹 [탭 2] 내 모임 신청자
+  // ---------------------------------------------------------
   Widget _buildApplicantTab() {
     if (_groupApplicants.isEmpty) return _buildEmptyState("들어온 신청이 없습니다.");
 
@@ -177,21 +157,25 @@ class _NotificationScreenState extends State<NotificationScreen>
       separatorBuilder: (context, index) => const SizedBox(height: 20),
       itemBuilder: (context, index) {
         final item = _groupApplicants[index];
+
         return _buildNotificationCard(
           icon: Icons.person_rounded,
-          iconColor: const Color(0xFF4C6DAF), // 파란색 (신청자 느낌)
-          title: item['userName']!,
-          subtitle: "신청 모임: ${item['targetGroup']}",
-          message: item['message']!,
-          time: item['time']!,
-          isApplicant: true, // 신청자 모드
-          groupId: 'applicant-id-temp', // ⭐️ 임시 ID 전달
+          iconColor: const Color(0xFF4C6DAF),
+          title: item["user_name"] ?? "",
+          subtitle: "신청 모임: ${item["group_name"] ?? ""}",
+          message: item["message"] ?? "",
+          time: item["created_at"] ?? "",
+          isApplicant: true,
+          actionId: item["action_id"],
+          groupId: item["group_id"],
         );
       },
     );
   }
 
-  // --- 공통: 알림 카드 위젯 (버튼 포함) ---
+  // ---------------------------------------------------------
+  // 🔹 공통 카드 UI + 버튼 (수락/거절 or 세부사항)
+  // ---------------------------------------------------------
   Widget _buildNotificationCard({
     required IconData icon,
     required Color iconColor,
@@ -200,7 +184,8 @@ class _NotificationScreenState extends State<NotificationScreen>
     required String message,
     required String time,
     required bool isApplicant,
-    String groupId = 'default-group-id', // ⭐️ groupId 추가 및 기본값 설정
+    required String actionId,
+    required String groupId,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -219,12 +204,12 @@ class _NotificationScreenState extends State<NotificationScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. 상단 정보 (아이콘, 제목, 시간) - 기존과 동일
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 40, height: 40,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: iconColor.withOpacity(0.1),
                   shape: BoxShape.circle,
@@ -239,16 +224,12 @@ class _NotificationScreenState extends State<NotificationScreen>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          title,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        Text(
-                          time,
-                          style: TextStyle(
-                              color: Colors.grey.shade400, fontSize: 12),
-                        ),
+                        Text(title,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text(time,
+                            style: TextStyle(
+                                color: Colors.grey.shade400, fontSize: 12)),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -267,7 +248,6 @@ class _NotificationScreenState extends State<NotificationScreen>
 
           const SizedBox(height: 12),
 
-          // 2. 메시지 내용 (박스 처리) - 기존과 동일
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
@@ -275,45 +255,39 @@ class _NotificationScreenState extends State<NotificationScreen>
               color: Colors.grey.shade50,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(
-              message,
-              style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
-            ),
+            child: Text(message,
+                style: TextStyle(color: Colors.grey.shade700, fontSize: 14)),
           ),
 
           const SizedBox(height: 16),
 
-          // 3. 액션 버튼 (수정된 부분)
           isApplicant
-              ? Row( // 소모임 신청자 (거절/수락 버튼 2개)
+              ? Row(
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () {
-                    print("거절 클릭");
+                  onPressed: () async {
+                    final ok = await _service.respondToAction(
+                        actionId, "decline");
+                    if (ok) {
+                      _loadNotifications();
+                    }
                   },
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.grey.shade300),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: Text("거절",
-                      style: TextStyle(color: Colors.grey.shade600)),
+                  child: const Text("거절"),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
-                    print("수락 클릭");
+                  onPressed: () async {
+                    final ok = await _service.respondToAction(
+                        actionId, "accept");
+                    if (ok) {
+                      _loadNotifications();
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF4C6DAF),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                    elevation: 0,
                   ),
                   child: const Text("수락",
                       style: TextStyle(color: Colors.white)),
@@ -321,30 +295,22 @@ class _NotificationScreenState extends State<NotificationScreen>
               ),
             ],
           )
-              : // 소모임 초대 (세부사항 버튼 1개)
-          SizedBox(
+              : SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                print("세부사항 클릭 - GroupDetailScreen으로 이동 (ID: $groupId)");
-                // ⭐️ GroupDetailScreen 이동 로직에 groupId 추가
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (c) => GroupDetailScreen(
-                      buttonType: GroupDetailButtonType.acceptOrDecline,
                       groupId: groupId,
+                      buttonType: GroupDetailButtonType.acceptOrDecline,
                     ),
                   ),
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4C6DAF),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-                elevation: 0,
-              ),
+                  backgroundColor: const Color(0xFF4C6DAF)),
               child: const Text("세부사항",
                   style: TextStyle(color: Colors.white)),
             ),
@@ -353,13 +319,14 @@ class _NotificationScreenState extends State<NotificationScreen>
       ),
     );
   }
-  // 빈 화면 표시 위젯
+
   Widget _buildEmptyState(String text) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.notifications_off_outlined, size: 60, color: Colors.grey.shade300),
+          Icon(Icons.notifications_off_outlined,
+              size: 60, color: Colors.grey.shade300),
           const SizedBox(height: 16),
           Text(text, style: TextStyle(color: Colors.grey.shade500)),
         ],
