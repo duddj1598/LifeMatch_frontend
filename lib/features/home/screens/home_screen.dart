@@ -241,11 +241,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           Row(
             children: const [
-              Text('💡 ', style: TextStyle(fontSize: 16)),
-              Text(
-                '다른 유형에게 추천되는 활동 더보기',
-                style: TextStyle(fontSize: 15, color: Colors.black87),
-              ),
+
             ],
           ),
         ],
