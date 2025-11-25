@@ -62,7 +62,10 @@ class MyApp extends StatelessWidget {
         '/chat-personal-detail': (context) => const ChatPersonalDetailScreen(),
         '/my-profile': (context) => const MyProfileScreen(),
         '/edit-profile': (context) => const EditProfileScreen(),
-        '/invite': (context) => const MemberInviteScreen(),
+        '/invite': (context) => MemberInviteScreen(
+          groupId: "temp-group-id",
+          initialGroupDetail: null,
+        ),
 
       },
 
