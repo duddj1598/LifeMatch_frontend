@@ -1,14 +1,19 @@
 // lib/features/auth/viewmodels/auth_viewmodel.dart
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // Provider import (사용하지 않더라도 기본 유지)
 import 'package:lifematch_frontend/features/auth/services/auth_service.dart';
 import 'package:lifematch_frontend/core/services/storage_service.dart';
 import 'package:jwt_decode/jwt_decode.dart';
 import 'dart:convert';
-import 'package:crypto/crypto.dart';
+
+import '../../../core/services/api_client.dart' as ApiClient;
+// crypto import 제거 (AuthService로 이동)
+// import 'package:crypto/crypto.dart';
 
 class AuthViewModel extends ChangeNotifier {
-  final AuthService _authService = AuthService();
+  // ⚠️ 주의: Stack Overflow를 해결하려면 이 부분은 Provider를 통해 주입받아야 합니다.
+  final AuthService _authService = AuthService(dio: ApiClient.dio);
   final StorageService _storageService = StorageService();
 
   bool _isLoading = false;
@@ -17,11 +22,8 @@ class AuthViewModel extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
-  // 🔐 SHA256 암호화
-  String _encryptPassword(String password) {
-    final bytes = utf8.encode(password);
-    return sha256.convert(bytes).toString();
-  }
+  // 🔐 SHA256 암호화 함수 제거 (AuthService로 이동)
+  // String encryptPassword(String password) { ... }
 
   void _setLoading(bool loading) {
     _isLoading = loading;
@@ -34,13 +36,13 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   // -------------------------------------------------------
-  // 🔥 회원가입 (백엔드 스키마 완전히 반영)
+  // 🔥 회원가입 (AuthService로 평문 비밀번호 전달)
   // -------------------------------------------------------
   Future<bool> signup({
     required String userId,
     required String email,
     required String nickname,
-    required String password,
+    required String password, // ⭐️ 평문 비밀번호를 받음
     required String securityQuestion,
     required String securityAnswer,
   }) async {
@@ -48,13 +50,12 @@ class AuthViewModel extends ChangeNotifier {
     _setErrorMessage(null);
 
     try {
-      final encryptedPassword = _encryptPassword(password);
-
+      // ⭐️ 해싱은 AuthService에서 담당
       await _authService.signup(
         userId: userId,
         email: email,
         nickname: nickname,
-        password: encryptedPassword,
+        password: password, // ⭐️ 평문 전달
         securityQuestion: securityQuestion,
         securityAnswer: securityAnswer,
       );
@@ -70,17 +71,16 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   // -------------------------------------------------------
-  // 🔐 로그인 (JWT 기반 처리)
+  // 🔐 로그인 (AuthService로 평문 비밀번호 전달)
   // -------------------------------------------------------
   Future<bool?> login(String email, String password) async {
     _setLoading(true);
     _setErrorMessage(null);
 
     try {
-      final encryptedPassword = _encryptPassword(password);
-
+      // ⭐️ 해싱은 AuthService에서 담당
       final Map<String, dynamic> responseData =
-      await _authService.login(email, encryptedPassword);
+      await _authService.login(email, password); // ⭐️ 평문 전달
 
       final String? accessToken = responseData['accessToken'];
       final bool hasCompletedSurvey = responseData['hasCompletedSurvey'] == true;
@@ -120,7 +120,7 @@ class AuthViewModel extends ChangeNotifier {
     } catch (e) {
       _setErrorMessage(e.toString());
       _setLoading(false);
-      return null;
+      rethrow; // ⭐️ 예외 발생 시 상위 _handleLogin의 catch로 전파
     }
   }
 }
