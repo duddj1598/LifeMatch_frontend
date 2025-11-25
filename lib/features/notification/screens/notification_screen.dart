@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lifematch_frontend/features/team_management/widgets/custom_bottom_nav_bar.dart';
 import 'package:lifematch_frontend/features/group/screens/group_detail_screen.dart';
+
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
 
@@ -16,18 +17,21 @@ class _NotificationScreenState extends State<NotificationScreen>
   // --- 1. 소모임 초대 데이터 (나에게 온 초대) ---
   final List<Map<String, String>> _myInvites = [
     {
+      "groupId": "invite-id-1", // ⭐️ groupId 추가
       "groupName": "서울 맛집 탐방",
       "leader": "맛잘알",
       "message": "회원님의 프로필을 보고 저희 모임에 딱 맞을 것 같아 초대합니다!",
       "time": "10분 전"
     },
     {
+      "groupId": "invite-id-2", // ⭐️ groupId 추가
       "groupName": "주말 등산 크루",
       "leader": "산타할아버지",
       "message": "이번 주 관악산 등반 함께 하실래요?",
       "time": "1시간 전"
     },
     {
+      "groupId": "invite-id-3", // ⭐️ groupId 추가
       "groupName": "영어 회화 스터디",
       "leader": "EnglishMaster",
       "message": "초급반 인원 충원 중입니다. 관심 있으시면 수락해주세요.",
@@ -100,8 +104,8 @@ class _NotificationScreenState extends State<NotificationScreen>
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-          onPressed: () => Navigator.pushReplacementNamed(context, '/home')
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+            onPressed: () => Navigator.pushReplacementNamed(context, '/home')
         ),
         title: const Text(
           "알림",
@@ -147,6 +151,8 @@ class _NotificationScreenState extends State<NotificationScreen>
       separatorBuilder: (context, index) => const SizedBox(height: 20),
       itemBuilder: (context, index) {
         final item = _myInvites[index];
+        final String groupId = item['groupId'] ?? 'default-invite-id'; // ⭐️ groupId 추출
+
         return _buildNotificationCard(
           icon: Icons.mark_email_unread_rounded,
           iconColor: const Color(0xFFFF9800), // 주황색 (초대 느낌)
@@ -155,6 +161,7 @@ class _NotificationScreenState extends State<NotificationScreen>
           message: item['message']!,
           time: item['time']!,
           isApplicant: false, // 초대 모드
+          groupId: groupId, // ⭐️ groupId 전달
         );
       },
     );
@@ -178,6 +185,7 @@ class _NotificationScreenState extends State<NotificationScreen>
           message: item['message']!,
           time: item['time']!,
           isApplicant: true, // 신청자 모드
+          groupId: 'applicant-id-temp', // ⭐️ 임시 ID 전달
         );
       },
     );
@@ -192,6 +200,7 @@ class _NotificationScreenState extends State<NotificationScreen>
     required String message,
     required String time,
     required bool isApplicant,
+    String groupId = 'default-group-id', // ⭐️ groupId 추가 및 기본값 설정
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -317,9 +326,17 @@ class _NotificationScreenState extends State<NotificationScreen>
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                print("세부사항 클릭 - GroupDetailScreen으로 이동");
-                // 🚨 여기에 GroupDetailScreen으로 이동하는 로직을 추가해야 합니다.
-                Navigator.push(context, MaterialPageRoute(builder: (c) => GroupDetailScreen(buttonType: GroupDetailButtonType.acceptOrDecline)));
+                print("세부사항 클릭 - GroupDetailScreen으로 이동 (ID: $groupId)");
+                // ⭐️ GroupDetailScreen 이동 로직에 groupId 추가
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (c) => GroupDetailScreen(
+                      buttonType: GroupDetailButtonType.acceptOrDecline,
+                      groupId: groupId,
+                    ),
+                  ),
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4C6DAF),

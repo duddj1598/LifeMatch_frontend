@@ -594,8 +594,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     '생년월일 및 성별 (매칭 정확도 향상), 관심사 카테고리, 거주지(시/구 단위) : 회원 탈퇴 시 즉시 파기\n'
                 'IP 주소, 서비스 이용 기록, 접속 기기 정보 : 3년(통신 비밀 보호법에 따름)\n'
 
-
-
                 ,style: TextStyle(fontSize: 13),
               ),
             ),

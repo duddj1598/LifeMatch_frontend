@@ -12,11 +12,20 @@ class TeamMember {
 }
 
 class MemberInviteScreen extends StatefulWidget {
-  const MemberInviteScreen({super.key});
+  final String groupId;
+  final GroupDetail? initialGroupDetail;
+
+  const MemberInviteScreen({
+    super.key,
+    required this.groupId,
+    this.initialGroupDetail,
+  });
 
   @override
   State<MemberInviteScreen> createState() => _MemberInviteScreenState();
 }
+
+
 
 class _MemberInviteScreenState extends State<MemberInviteScreen> {
   final List<TeamMember> _suggestedMembers = [
@@ -47,17 +56,22 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
       ),
+
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: Color(0xFF4C6DAF), width: 1.0),
       ),
+
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: Color(0xFF4C6DAF), width: 2.0),
       ),
+
       contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
     );
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -80,8 +94,7 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
         child: Column(
           children: [
             const SizedBox(height: 18), // 검색창 상단 여백
-
-            // 검색 바
+// 검색 바
             TextField(
               controller: _searchController,
               decoration: _buildInputDecoration(
@@ -89,13 +102,12 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
                 prefixIcon: const Icon(Icons.search, color: Color(0xFF4C6DAF)),
               ),
               onChanged: (value) {
-                // 검색 로직
+// 검색 로직
               },
             ),
 
             const SizedBox(height: 20),
-
-            // [소모임 이름]에 어울리는 팀원이에요!
+// [소모임 이름]에 어울리는 팀원이에요!
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -109,7 +121,7 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
             ),
             const SizedBox(height: 16),
 
-            // 프로필 목록
+// 프로필 목록
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
@@ -133,12 +145,12 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
 
             const SizedBox(height: 24), // 하단 버튼과의 간격
 
-            // 하단 버튼 (이전 / 완료)
+// 하단 버튼 (이전 / 완료)
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    // '이전' 버튼: 이전 페이지로 돌아갑니다. (변경 없음)
+// '이전' 버튼: 이전 페이지로 돌아갑니다. (변경 없음)
                     onPressed: () => Navigator.of(context).pop(),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF4C6DAF).withOpacity(0.7),
@@ -156,168 +168,320 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    // '완료' 버튼: 요청하신 디버그 프린트 및 주석 추가
+// '완료' 버튼: 요청하신 디버그 프린트 및 주석 추가
                     onPressed: () {
-                      // 1. 요청하신 디버그 메시지 출력
                       print("완료 버튼 입력");
-
-                      // 2. 기존 SnackBar 메시지 (유지)
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                             content: Text("팀원 초대 완료 (선택된 팀원 처리 로직 필요)")),
                       );
-
+                      // ⭐️ TeamManagementScreen으로 이동하며 데이터 전달
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const TeamManagementScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => TeamManagementScreen(
+                            groupId: widget.groupId, // ⭐️ widget.으로 접근
+                            initialGroupDetail: widget.initialGroupDetail, // ⭐️ widget.으로 접근
+                          ),
+                        ),
                       );
                     },
+
                     style: ElevatedButton.styleFrom(
+
                       backgroundColor: const Color(0xFF4C6DAF).withOpacity(0.7),
+
                       padding: const EdgeInsets.symmetric(vertical: 14),
+
                       shape: RoundedRectangleBorder(
+
                         borderRadius: BorderRadius.circular(12),
+
                       ),
+
                     ),
+
                     child: const Text(
+
                       '완료',
+
                       style: TextStyle(fontSize: 20, color: Colors.white),
+
                     ),
+
                   ),
+
                 ),
+
               ],
+
             ),
+
             const SizedBox(height: 24),
+
           ],
+
         ),
+
       ),
+
     );
+
   }
 
-  // '프로필 더보기' 버튼 (✅ 2. 로직이 5명씩 추가하도록 변경됨)
+
+
+// '프로필 더보기' 버튼 (✅ 2. 로직이 5명씩 추가하도록 변경됨)
+
   Widget _buildProfileMoreButton() {
+
     return Container(
+
       margin: const EdgeInsets.symmetric(horizontal: 4.0),
+
       padding: const EdgeInsets.symmetric(vertical: 8.0),
+
       child: TextButton(
+
         onPressed: () {
-          // --- 5명 추가 로직 ---
+
+// --- 5명 추가 로직 ---
+
           setState(() {
+
             List<TeamMember> newMembers = []; // 1. 5명을 담을 빈 리스트 생성
+
             for (int i = 0; i < 5; i++) { // 2. 5번 반복
+
               newMembers.add(
+
                 TeamMember(
+
                   nickname: '새 멤버 $_newMemberCounter', // 3. 카운터를 이용해 고유 이름 부여
+
                   interest: '추가 관심사',
+
                   isInvited: false,
+
                 ),
+
               );
+
               _newMemberCounter++; // 4. 다음 이름을 위해 카운터 1 증가
+
             }
+
             _suggestedMembers.addAll(newMembers); // 5. 5명이 담긴 리스트를 한꺼번에 추가
+
           });
-          // --- 로직 끝 ---
+
+// --- 로직 끝 ---
+
         },
+
         child: const Text(
+
           '프로필 더보기',
+
           style: TextStyle(
+
             fontSize: 15,
+
             fontWeight: FontWeight.bold,
+
             color: Color(0xFF4C6DAF),
+
           ),
+
         ),
+
       ),
+
     );
+
   }
 
-  // 팀원 프로필 카드 (변경 없음)
+
+
+// 팀원 프로필 카드 (변경 없음)
+
   Widget _buildTeamMemberCard(TeamMember member) {
+
     return Container(
+
       margin: const EdgeInsets.fromLTRB(4.0, 0, 4.0, 8.0), // (left, top, right, bottom)
+
       padding: const EdgeInsets.all(16),
+
       decoration: BoxDecoration(
+
         color: Colors.white,
+
         borderRadius: BorderRadius.circular(12),
-        // 카드 자체의 테두리
+
+// 카드 자체의 테두리
+
         border: Border.all(color: const Color(0xFF4C6DAF), width: 1.0),
+
       ),
+
       child: Row(
+
         children: [
+
           Container(
+
             width: 60,
+
             height: 60,
+
             decoration: BoxDecoration(
+
               color: Colors.grey[300],
+
               borderRadius: BorderRadius.circular(8),
+
             ),
+
             child: const Center(
+
               child: Text(
+
                 '프로필\n사진',
+
                 textAlign: TextAlign.center,
+
                 style: TextStyle(fontSize: 12, color: Colors.black54),
+
               ),
+
             ),
+
           ),
+
           const SizedBox(width: 16),
+
           Expanded(
+
             child: Column(
+
               crossAxisAlignment: CrossAxisAlignment.start,
+
               children: [
+
                 Row(
+
                   children: [
+
                     Text(
+
                       member.nickname,
+
                       style: const TextStyle(
+
                         fontSize: 18,
+
                         fontWeight: FontWeight.bold,
+
                         color: Color(0xFF4C6DAF),
+
                       ),
+
                     ),
+
                     const SizedBox(width: 4),
+
                     const Icon(Icons.chat_bubble_outline, size: 18, color: Color(0xFF4C6DAF)),
+
                   ],
+
                 ),
+
                 const SizedBox(height: 4),
+
                 Text(
+
                   '관심사: ${member.interest}',
+
                   style: const TextStyle(
+
                     fontSize: 13,
+
                     color: Colors.black54,
+
                   ),
+
                 ),
+
               ],
+
             ),
+
           ),
+
           const SizedBox(width: 16),
+
           ElevatedButton(
+
             onPressed: member.isInvited
+
                 ? null
+
                 : () {
+
               setState(() {
+
                 member.isInvited = true;
+
               });
+
               ScaffoldMessenger.of(context).showSnackBar(
+
                 SnackBar(content: Text('${member.nickname}님을 초대했습니다.')),
+
               );
+
             },
+
             style: ElevatedButton.styleFrom(
+
               backgroundColor: member.isInvited
+
                   ? const Color(0xFF4C6DAF).withOpacity(0.5)
+
                   : const Color(0xFF002B82).withOpacity(0.8),
+
               foregroundColor: Colors.white,
+
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
               shape: RoundedRectangleBorder(
+
                 borderRadius: BorderRadius.circular(8),
+
               ),
+
               elevation: 0,
+
             ),
+
             child: Text(
+
               member.isInvited ? '초대완료' : '초대하기',
+
               style: const TextStyle(fontSize: 15),
+
             ),
+
           ),
+
         ],
+
       ),
+
     );
+
   }
+
 }
+
