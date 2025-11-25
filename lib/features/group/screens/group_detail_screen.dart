@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-// 1. ⭐️ (필수) 하단 내비게이션 바 임포트
 import 'package:lifematch_frontend/features/team_management/widgets/custom_bottom_nav_bar.dart';
+import 'package:lifematch_frontend/features/team_management/screens/team_management_screen.dart';
+import 'package:lifematch_frontend/core/services/storage_service.dart';
+import '../models/group_model.dart';
+import '../services/group_service.dart';
 
 // 2. ⭐️ (핵심) 버튼 타입 정의 (기존과 동일)
 enum GroupDetailButtonType {
@@ -26,6 +29,52 @@ class GroupDetailScreen extends StatefulWidget {
 }
 
 class _GroupDetailScreenState extends State<GroupDetailScreen> {
+  final StorageService _storageService = StorageService();
+  final GroupService _groupService = GroupService();
+
+  bool _isLoading = true;
+  bool _hasError = false;
+
+  late GroupModel _groupDetail;
+
+  String? _myUserDocId;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchGroupDetail();
+  }
+
+
+  Future<void> _fetchGroupDetail() async {
+    try {
+      // ⭐️ 3. 사용자 ID를 로드
+      final String? userId = await _storageService.getUserId();
+      if (userId == null) {
+        throw Exception("로그인된 사용자 ID를 찾을 수 없습니다. 다시 로그인 해주세요.");
+      }
+
+      final GroupModel detail = await _groupService.getGroupDetail(widget.groupId);
+
+      setState(() {
+        _groupDetail = detail;
+        _myUserDocId = userId; // ⭐️ 로드된 사용자 ID 저장
+        _isLoading = false;
+        _hasError = false;
+      });
+
+    } catch (e) {
+      print("❌ 그룹 상세 정보 로딩/유저 ID 로딩 실패: $e");
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('모임 정보를 불러오는 데 실패했습니다: ${e.toString()}')),
+      );
+    }
+  }
+
   // --- 4. ⭐️ 색상 정의 (기존과 동일) ---
   final Color _borderColor = const Color(0xFF4C6DAF);
   final Color _buttonColor70 = const Color(0xFF4C6DAF).withOpacity(0.7);

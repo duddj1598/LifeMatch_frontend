@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lifematch_frontend/features/auth/services/auth_service.dart';
 import 'package:lifematch_frontend/core/constants/security_questions.dart';
 
+import '../../../core/services/api_client.dart' as ApiClient;
+
 class FindIdScreen extends StatefulWidget {
   const FindIdScreen({super.key});
 
@@ -14,6 +16,8 @@ class _FindIdScreenState extends State<FindIdScreen> {
   final _emailController = TextEditingController();
   final _answerController = TextEditingController();
   final _customQuestionController = TextEditingController();
+
+  final AuthService _authService = AuthService(dio: ApiClient.dio);
 
   String? _selectedQuestion;
   bool _isCustomQuestion = false;
@@ -157,7 +161,7 @@ class _FindIdScreenState extends State<FindIdScreen> {
                   }
 
                   try {
-                    final id = await AuthService().findUserId(
+                    final id = await _authService.findUserId(
                       email: _emailController.text.trim(),
                       securityQuestion: question,
                       securityAnswer: _answerController.text.trim(),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lifematch_frontend/features/auth/services/auth_service.dart';
 import 'package:lifematch_frontend/core/constants/security_questions.dart';
 
+import '../../../core/services/api_client.dart' as ApiClient;
+
 class FindPwScreen extends StatefulWidget {
   const FindPwScreen({super.key});
 
@@ -16,12 +18,10 @@ class _FindPwScreenState extends State<FindPwScreen> {
   final _customQuestionController = TextEditingController();
   final _newPwController = TextEditingController();
   final _newPwCheckController = TextEditingController();
-
+  final AuthService _authService = AuthService(dio: ApiClient.dio);
   String? _selectedQuestion;
   bool _isCustomQuestion = false;
-  bool _isResetComplete = false;
 
-  // ✅ 질문 목록
   final List<String> _questions = securityQuestions;
 
   @override
@@ -33,6 +33,15 @@ class _FindPwScreenState extends State<FindPwScreen> {
     _newPwController.dispose();
     _newPwCheckController.dispose();
     super.dispose();
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -60,7 +69,7 @@ class _FindPwScreenState extends State<FindPwScreen> {
             ),
             const SizedBox(height: 25),
 
-            // 아이디
+            // 아이디 입력
             TextField(
               controller: _idController,
               decoration: const InputDecoration(
@@ -73,7 +82,7 @@ class _FindPwScreenState extends State<FindPwScreen> {
             ),
             const SizedBox(height: 15),
 
-            // 이메일
+            // 이메일 입력
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(
@@ -95,7 +104,7 @@ class _FindPwScreenState extends State<FindPwScreen> {
 
             DropdownButtonFormField<String>(
               initialValue: _selectedQuestion,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(borderSide: BorderSide.none),
@@ -113,21 +122,23 @@ class _FindPwScreenState extends State<FindPwScreen> {
             ),
             const SizedBox(height: 15),
 
-            // 직접 질문 입력
-            if (_isCustomQuestion) ...[
-              TextField(
-                controller: _customQuestionController,
-                decoration: const InputDecoration(
-                  hintText: '직접 질문을 입력해주세요',
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(borderSide: BorderSide.none),
-                ),
+            if (_isCustomQuestion)
+              Column(
+                children: [
+                  TextField(
+                    controller: _customQuestionController,
+                    decoration: const InputDecoration(
+                      hintText: '직접 질문을 입력해주세요',
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                ],
               ),
-              const SizedBox(height: 15),
-            ],
 
-            // 답변 입력
+            // 답변
             const Text(
               '본인 확인 답변',
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
@@ -144,7 +155,34 @@ class _FindPwScreenState extends State<FindPwScreen> {
             ),
             const SizedBox(height: 25),
 
-            // 재설정 버튼
+            // 새 비밀번호
+            TextField(
+              controller: _newPwController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: '새 비밀번호 입력',
+                hintText: '문자, 숫자, 특수문자 포함 (8~20자)',
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // 새 비밀번호 확인
+            TextField(
+              controller: _newPwCheckController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: '비밀번호 재입력',
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            // 재설정하기 버튼
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -154,14 +192,18 @@ class _FindPwScreenState extends State<FindPwScreen> {
                       : _selectedQuestion;
 
                   if (question == null || question.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("질문을 선택해주세요.")),
-                    );
+                    _showSnackBar("질문을 선택해주세요.");
+                    return;
+                  }
+
+                  if (_newPwController.text.trim() !=
+                      _newPwCheckController.text.trim()) {
+                    _showSnackBar("비밀번호가 서로 일치하지 않습니다.");
                     return;
                   }
 
                   try {
-                    final success = await AuthService().resetPassword(
+                    final success = await _authService.resetPassword(
                       loginId: _idController.text.trim(),
                       email: _emailController.text.trim(),
                       securityQuestion: question,
@@ -170,94 +212,33 @@ class _FindPwScreenState extends State<FindPwScreen> {
                     );
 
                     if (success) {
-                      setState(() {
-                        _isResetComplete = true;
-                      });
+                      _showSnackBar("비밀번호가 성공적으로 변경되었습니다.");
+
+                      // 로그인 화면으로 이동
+                      Navigator.pushReplacementNamed(context, '/login');
+
                     }
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("정보가 일치하지 않습니다.")),
-                    );
+                    _showSnackBar("정보가 일치하지 않습니다.");
                   }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF9AA8DA),
-                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 child: const Text(
                   '재설정하기',
                   style: TextStyle(
-                    color: Colors.white,      // ✅ 흰색 텍스트
-                    fontSize: 20,             // ✅ 글씨 크기 키움
-                    fontWeight: FontWeight.bold, // ✅ 굵게 강조
+                    fontSize: 20,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-
               ),
             ),
-            const SizedBox(height: 25),
-
-            // 재설정 완료 후 새 비밀번호 입력
-            if (_isResetComplete) ...[
-              TextField(
-                controller: _newPwController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: '새 비밀번호 입력',
-                  hintText: '문자, 숫자, 특수문자 포함 (8~20자)',
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(borderSide: BorderSide.none),
-                ),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _newPwCheckController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: '비밀번호 재입력',
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(borderSide: BorderSide.none),
-                ),
-              ),
-              const SizedBox(height: 10),
-              const Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.red, size: 18),
-                  SizedBox(width: 5),
-                  Text(
-                    '비밀번호가 성공적으로 변경되었습니다.',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF9AA8DA),
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text(
-                    '로그인 하기',
-                    style: TextStyle(
-                      color: Colors.white,        // ✅ 흰색 텍스트
-                      fontSize: 20,               // ✅ 글씨 크기 키움
-                      fontWeight: FontWeight.bold, // ✅ 굵게
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
       ),
