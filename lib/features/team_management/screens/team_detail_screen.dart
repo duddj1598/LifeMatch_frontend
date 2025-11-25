@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../group/screens/group_detail_screen.dart';
-import '../widgets/custom_bottom_nav_bar.dart'; // 하단바 위젯 import
+import 'package:lifematch_frontend/features/group/screens/group_detail_screen.dart';
+import 'package:lifematch_frontend/features/team_management/screens/team_management_screen.dart';
+import 'package:lifematch_frontend/features/team_management/widgets/custom_bottom_nav_bar.dart';
+import 'package:lifematch_frontend/features/group/services/group_service.dart';
+import 'memberInvite_screen.dart';
 
 class TeamDetailScreen extends StatefulWidget {
   // ⭐️ 1. 홈 화면에서 카테고리 이름을 받을 변수 추가
@@ -19,18 +22,36 @@ class TeamDetailScreen extends StatefulWidget {
 
 class _TeamDetailScreenState extends State<TeamDetailScreen> {
   bool isCreateSelected = true;
+  // GroupService는 GroupDetail을 반환하도록 수정되어야 합니다.
+  final GroupService _groupService = GroupService();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _descController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _capacityController = TextEditingController();
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descController.dispose();
+    _locationController.dispose();
+    _capacityController.dispose();
+    super.dispose();
+  }
+
+  // ⭐️ [수정] _groupList에 groupId 필드 추가
   final List<Map<String, String>> _groupList = [
-    {"title": "[소모임 이름]", "topic": "투자ㆍ소비습관"},
-    {"title": "[소모임 이름]", "topic": "투자ㆍ소비습관"},
-    {"title": "[소모임 이름]", "topic": "투자ㆍ소비습관"},
-    {"title": "[소모임 이름]", "topic": "투자ㆍ소비습관"},
-    {"title": "[소모임 이름]", "topic": "투자ㆍ소비습관"},
-    {"title": "[소모임 이름]", "topic": "운동ㆍ헬스"},
-    {"title": "[소모임 이름]", "topic": "맛집 탐방"},
-    {"title": "[소모임 이름]", "topic": "반려동물"},
-    {"title": "[소모임 이름]", "topic": "코딩 스터디"},
+    {"groupId": "join-id-a", "title": "[소모임 이름 A]", "topic": "투자ㆍ소비습관"},
+    {"groupId": "join-id-b", "title": "[소모임 이름 B]", "topic": "투자ㆍ소비습관"},
+    {"groupId": "join-id-c", "title": "[소모임 이름 C]", "topic": "투자ㆍ소비습관"},
+    {"groupId": "join-id-d", "title": "[소모임 이름 D]", "topic": "투자ㆍ소비습관"},
+    {"groupId": "join-id-e", "title": "[소모임 이름 E]", "topic": "투자ㆍ소비습관"},
+    {"groupId": "join-id-f", "title": "[소모임 이름 F]", "topic": "운동ㆍ헬스"},
+    {"groupId": "join-id-g", "title": "[소모임 이름 G]", "topic": "맛집 탐방"},
+    {"groupId": "join-id-h", "title": "[소모임 이름 H]", "topic": "반려동물"},
+    {"groupId": "join-id-i", "title": "[소모임 이름 I]", "topic": "코딩 스터디"},
   ];
+
+
 
   // ⭐️ 1. "더보기"를 위한 카운터 변수 추가
   int _groupCounter = 1;
@@ -170,10 +191,10 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
               const SizedBox(height: 20),
 
               // ... (입력 필드들) ...
-              _buildTextField("소모임 이름", "2~10자 내외로 설정 해 주세요"),
-              _buildTextField("소모임 설명", "30자 이내로 작성 해 주세요"),
-              _buildTextField("소모임 모임 장소", "30자 이내로 작성 해 주세요"),
-              _buildTextField("소모임 인원 수", "2~10자 내외로 설정 해 주세요"),
+              _buildTextField("소모임 이름", "2~10자 내외로 설정 해 주세요", controller: _nameController),
+              _buildTextField("소모임 설명", "30자 이내로 작성 해 주세요", controller: _descController),
+              _buildTextField("소모임 모임 장소", "30자 이내로 작성 해 주세요", controller: _locationController),
+              _buildTextField("소모임 인원 수", "2~10자 내외로 설정 해 주세요", controller: _capacityController), // 인원수는 숫자만 받도록 가정
             ],
           ),
         ),
@@ -182,12 +203,9 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            // ⭐️ [수정] onPressed에 /invite 라우트로 이동하는 로직 추가
-            onPressed: () {
-              print('소모임 개설 - 다음 버튼 클릭: /invite로 이동');
-              // Navigator.pushNamedAndRemoveUntil(context, '/invite', (route) => false);
-              // 현재 화면 위에 새 화면을 쌓아 올립니다.
-              Navigator.pushNamed(context, '/invite');
+            // ⭐️ 4. API 호출 및 다음 화면 이동 로직
+            onPressed: () async {
+              await _createGroupAndNavigate(context); // ⭐️ 새 함수 호출
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF9AA8DA),
@@ -234,6 +252,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                 context, // ⭐️ context 전달
                 group['title']!,
                 group['topic']!,
+                group['groupId']!, // ⭐️ groupId 전달
               );
             }
           },
@@ -276,8 +295,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
 
 // 🔹 소모임 목록 아이템 위젯 (수정)
-  // ⭐️ context 인자 추가
-  Widget _buildGroupListItem(BuildContext context, String title, String topic) {
+  // ⭐️ context 인자 및 groupId 인자 추가
+  Widget _buildGroupListItem(BuildContext context, String title, String topic, String groupId) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -335,16 +354,14 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           // ⭐️ 세부정보 버튼
           ElevatedButton(
             onPressed: () {
-              // ⭐️ Navigator.pushNamed 대신 Navigator.push를 사용하여 GroupDetailScreen으로 이동
-              print("페이지 이동! (세부정보: $title) - GroupDetailScreen으로 이동");
-              // 이 부분은 이전 요청에 따라 수정하지 않았습니다.
+              // ⭐️ GroupDetailScreen으로 이동 시 groupId 전달
+              print("페이지 이동! (세부정보: $title) - GroupDetailScreen으로 이동 (ID: $groupId)");
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => GroupDetailScreen(
-                    // ⭐️ 요청하신 대로 joinOrInquire 타입을 직접 전달
                     buttonType: GroupDetailButtonType.joinOrInquire,
-                    // 그룹 ID 등 필요한 다른 매개변수도 여기에 추가하세요.
+                    groupId: groupId, // ⭐️ groupId 전달
                   ),
                 ),
               );
@@ -364,7 +381,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
-  // ⭐️ 4. "더보기" 버튼 위젯 및 로직 추가 (기존과 동일)
+  // ⭐️ 4. "더보기" 버튼 위젯 및 로직 추가 (groupId 추가 반영)
   Widget _buildGroupMoreButton() {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -376,6 +393,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             for (int i = 0; i < 5; i++) { // 2. 5번 반복
               newGroups.add(
                   {
+                    "groupId": "new-join-id-$_groupCounter", // ⭐️ groupId 필드 추가
                     "title": "새 소모임 $_groupCounter", // 3. 카운터로 고유 이름
                     "topic": "추가 주제"
                   }
@@ -399,7 +417,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   }
 
   // 🔹 재사용 가능한 텍스트필드 위젯 (기존과 동일)
-  Widget _buildTextField(String label, String hint) {
+  Widget _buildTextField(String label, String hint, {TextEditingController? controller, bool isNumber = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -410,6 +428,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
               const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
           TextField(
+            controller: controller, // ⭐️ 컨트롤러 연결
+            keyboardType: isNumber ? TextInputType.number : TextInputType.text, // ⭐️ 숫자 입력 타입 설정
             decoration: InputDecoration(
               hintText: hint,
               filled: true,
@@ -426,7 +446,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       ),
     );
   }
-
   // 🔹 소모임 개설/참여 버튼 (기존과 동일)
   Widget _buildSelectButton(String text, bool isCreate) {
     final isSelected = (isCreateSelected == isCreate);
@@ -473,5 +492,62 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         ),
       ),
     );
+  }
+
+  // ⭐️⭐️⭐️ [핵심 수정] _createGroupAndNavigate 함수
+  Future<void> _createGroupAndNavigate(BuildContext context) async {
+    // 5-1. 입력값 검증 (간소화)
+    final name = _nameController.text;
+    final desc = _descController.text;
+    final location = _locationController.text;
+    final capacity = int.tryParse(_capacityController.text) ?? 0;
+    final category = widget.selectedCategory; // 홈 화면에서 받은 카테고리 사용
+
+    if (name.isEmpty || desc.isEmpty || location.isEmpty || capacity < 2) {
+      // 에러 처리: snackbar 등을 띄워야 함
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('모든 필드를 올바르게 입력해주세요.')),
+      );
+      return;
+    }
+
+    try {
+      // 로딩 인디케이터 표시 (옵션)
+      // showLoading(context);
+
+      // ⭐️ 1. await 호출을 완료하고, GroupDetail 객체를 받습니다.
+      final GroupDetail newGroupDetail = await _groupService.createGroup(
+        groupName: name,
+        description: desc,
+        category: category,
+        capacity: capacity,
+        location: location,
+      );
+
+      // ⭐️ 2. API 호출 성공 후의 순차적 코드를 아래에 배치합니다. (이전 오류 해결)
+      print('✅ 소모임 생성 성공! Group ID: ${newGroupDetail.groupId}');
+
+      // MemberInviteScreen으로 이동 (시나리오 4번)
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MemberInviteScreen(
+            groupId: newGroupDetail.groupId,
+            // ⭐️ 초기 데이터를 MemberInviteScreen으로 전달
+            initialGroupDetail: newGroupDetail,
+          ),
+        ),
+      );
+
+    } catch (e) {
+      // 5-4. API 호출 실패
+      print('❌ 소모임 생성 실패: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('소모임 생성 실패: ${e.toString()}')),
+      );
+    } finally {
+      // 로딩 인디케이터 숨김 (옵션)
+      // hideLoading(context);
+    }
   }
 }

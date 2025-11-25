@@ -40,7 +40,6 @@ class AuthService {
   }
 
 
-
   // --- 로그인 함수 ---
   Future<Map<String, dynamic>> login(String id, String password) async {
     try {
