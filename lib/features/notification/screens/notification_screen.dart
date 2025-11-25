@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lifematch_frontend/features/team_management/widgets/custom_bottom_nav_bar.dart';
 import 'package:lifematch_frontend/features/group/screens/group_detail_screen.dart';
-import 'package:lifematch_frontend/features/notification/services/notification_service.dart'; // 🔥 여기만 수정
+import 'package:lifematch_frontend/features/notification/services/notification_service.dart';
+import 'package:lifematch_frontend/features/team_management/screens/team_management_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -135,7 +136,6 @@ class _NotificationScreenState extends State<NotificationScreen>
           iconColor: const Color(0xFFFF9800),
           title: item["group_name"] ?? "",
           subtitle: "보낸 사람: ${item["leader_name"] ?? ""}",
-          message: item["message"] ?? "",
           time: item["created_at"] ?? "",
           isApplicant: false,
           actionId: item["action_id"],
@@ -161,9 +161,8 @@ class _NotificationScreenState extends State<NotificationScreen>
         return _buildNotificationCard(
           icon: Icons.person_rounded,
           iconColor: const Color(0xFF4C6DAF),
-          title: item["user_name"] ?? "",
+          title: item["applicant_nickname"] ?? "",
           subtitle: "신청 모임: ${item["group_name"] ?? ""}",
-          message: item["message"] ?? "",
           time: item["created_at"] ?? "",
           isApplicant: true,
           actionId: item["action_id"],
@@ -181,7 +180,6 @@ class _NotificationScreenState extends State<NotificationScreen>
     required Color iconColor,
     required String title,
     required String subtitle,
-    required String message,
     required String time,
     required bool isApplicant,
     required String actionId,
@@ -247,19 +245,8 @@ class _NotificationScreenState extends State<NotificationScreen>
           ),
 
           const SizedBox(height: 12),
-
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(message,
-                style: TextStyle(color: Colors.grey.shade700, fontSize: 14)),
-          ),
-
-          const SizedBox(height: 16),
+          // ⭐️ message UI 제거 ⭐️
+          // const SizedBox(height: 16), // ⭐️ 불필요한 공백 제거
 
           isApplicant
               ? Row(
@@ -299,12 +286,14 @@ class _NotificationScreenState extends State<NotificationScreen>
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
+                // ⭐️ GroupDetailScreen으로 이동 (groupId와 actionId 전달)
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (c) => GroupDetailScreen(
                       groupId: groupId,
                       buttonType: GroupDetailButtonType.acceptOrDecline,
+                      actionId: actionId, // ⭐️ actionId 전달
                     ),
                   ),
                 );
