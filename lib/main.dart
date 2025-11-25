@@ -17,7 +17,6 @@ import 'package:lifematch_frontend/features/chat/screens/chat_group_detail_scree
 import 'package:lifematch_frontend/features/chat/screens/chat_personal_detail_screen.dart';
 import 'package:lifematch_frontend/features/profile/screens/my_profile_screen.dart';
 import 'package:lifematch_frontend/features/profile/screens/edit_profile_screen.dart';
-import 'package:lifematch_frontend/features/profile/screens/settings_screen.dart';
 
 //테스트 임포트
 import 'features/notification/screens/notification_screen.dart';
@@ -63,8 +62,8 @@ class MyApp extends StatelessWidget {
         '/chat-personal-detail': (context) => const ChatPersonalDetailScreen(),
         '/my-profile': (context) => const MyProfileScreen(),
         '/edit-profile': (context) => const EditProfileScreen(),
-        '/settings': (context) => const SettingsScreen(),
-       // '/invite': (context) => const MemberInviteScreen(groupId: '',),
+        '/invite': (context) => const MemberInviteScreen(),
+
       },
 
     );

@@ -8,7 +8,7 @@ class LifestyleTestService {
   /// 질문 가져오기
   Future<QuestionParts> getQuestions() async {
     try {
-      final response = await dio.get('/user/lifestyle-test/questions');
+      final response = await dio.get('/api/lifestyle-test/questions');
       return QuestionParts.fromJson(response.data['data']);
     } on DioException catch (e) {
       print("질문 로딩 실패: ${e.response?.data}");
