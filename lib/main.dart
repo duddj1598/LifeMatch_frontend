@@ -65,6 +65,7 @@ class MyApp extends StatelessWidget {
         '/invite': (context) => MemberInviteScreen(
           groupId: "temp-group-id",
           initialGroupDetail: null,
+          selectedCategory: "category",
         ),
 
       },

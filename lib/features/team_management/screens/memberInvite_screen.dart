@@ -19,11 +19,13 @@ class TeamMember {
 class MemberInviteScreen extends StatefulWidget {
   final String groupId;
   final GroupDetail? initialGroupDetail;
+  final String selectedCategory;
 
   const MemberInviteScreen({
     super.key,
     required this.groupId,
     this.initialGroupDetail,
+    required this.selectedCategory,
   });
 
   @override
@@ -53,11 +55,15 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
     if (query.trim().isEmpty) return;
 
     final url = Uri.parse("http://10.0.2.2:8000/api/panel/search");
+
     try {
       final response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"query": query}),
+        body: jsonEncode({
+          "query": query,
+          "category": widget.selectedCategory,  // 🔥 카테고리 전송!
+        }),
       );
 
       if (response.statusCode == 200) {
@@ -70,7 +76,7 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
           _suggestedMembers.addAll(
             idList.map((panelId) {
               return TeamMember(
-                nickname: shorten("패널 #$panelId"), // 🔹 여기 적용됨
+                nickname: shorten("$panelId"), // 🔹 여기 적용됨
                 interest: "관심사 정보 없음",
               );
             }),
