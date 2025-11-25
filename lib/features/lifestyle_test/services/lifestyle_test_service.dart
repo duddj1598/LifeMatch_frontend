@@ -25,7 +25,7 @@ class LifestyleTestService {
 
     try {
       final response = await dio.post(
-        '/user/lifestyle-test/result',
+        '/api/lifestyle-test/result',
         data: {
           "user_id": userId,                    // 🔥 추가!!
           "selected_option_ids": selectedOptionIds,
