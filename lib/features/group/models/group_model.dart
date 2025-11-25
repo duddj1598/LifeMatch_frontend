@@ -8,10 +8,8 @@ class GroupModel {
   final String? createdAt; // created_at (ISO 포맷 문자열)
   final String? chatId; // chat_id
   final String leaderId;
-
-  // 🔥 백엔드 서비스 코드에서 Firestore 문서를 읽을 때 'current_member' 필드를 사용함.
-  // 이 필드는 GroupRead 스키마에 직접 없지만, 문서에 포함되어 있으므로 추가합니다.
   final int currentMember;
+  final String leaderNickname;
 
   // 🔥 GroupDetailResponse 스키마에 있는 필드 (만약 상세 조회 API가 GroupDetailResponse를 쓴다면 필요)
   // 현재 라우터는 GroupRead를 반환하므로, 필요하다면 API 응답을 GroupRead로 단순화하거나,
@@ -29,20 +27,23 @@ class GroupModel {
     this.chatId,
     required this.currentMember, // Firestore 문서에서 읽어옴
     required this.leaderId,
+    required this.leaderNickname,
   });
 
   factory GroupModel.fromJson(Map<String, dynamic> json, String id) {
+    final int parsedCurrentMember = (json['current_member'] as num?)?.toInt() ?? 0;
     return GroupModel(
-      id: id,
+      id: id, // ⭐️ 두 번째 인자 id를 사용
       groupName: json['group_name'] ?? '이름 없음',
       description: json['description'],
       category: json['category'],
-      maxMember: json['max_member'] ?? 10,
+      maxMember: (json['max_member'] as num?)?.toInt() ?? 10, // 타입 안정성을 위해 num? 캐스팅 추가
       groupImage: json['group_image'],
       createdAt: json['created_at'],
       chatId: json['chat_id'],
-      currentMember: json['current_member'] ?? 0, // Firestore 문서에 있는 필드
+      currentMember: parsedCurrentMember,
       leaderId: json['leader_id'] ?? '',
+      leaderNickname: json['leader_nickname'] ?? '',
     );
   }
 }

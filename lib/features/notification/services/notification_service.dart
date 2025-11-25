@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:lifematch_frontend/core/services/storage_service.dart';
 
 class NotificationService {
-  static const String baseUrl = "http://localhost:8000";
+  static const String baseUrl = "http://10.0.2.2:8000";
 
   final StorageService _storage = StorageService();
 
@@ -33,6 +33,17 @@ class NotificationService {
   // ---------------------------------------------------------
   Future<bool> respondToAction(String actionId, String action) async {
     final token = await _storage.getToken(); // 🔥 수정됨
+    final userId = await _storage.getUserId();
+
+    if (userId == null) {
+      print("❌ Error: 사용자 ID를 찾을 수 없습니다.");
+      return false;
+    }
+
+    final Map<String, dynamic> requestBody = {
+      "user_id": userId, // ⭐️ [필수] 서버 스키마에 맞춰 user_id 추가
+      "action": action,
+    };
 
     final response = await http.post(
       Uri.parse('$baseUrl/api/notifications/$actionId/respond'),
@@ -40,9 +51,14 @@ class NotificationService {
         "Authorization": "Bearer $token",
         "Content-Type": "application/json",
       },
-      body: jsonEncode({"action": action}),
+      body: jsonEncode(requestBody), // ⭐️ 수정된 요청 본문 사용
     );
 
-    return response.statusCode == 200;
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      print("🚨🚨 ${response.statusCode} 에러 응답 본문: ${response.body}");
+      return false;
+    }
   }
 }

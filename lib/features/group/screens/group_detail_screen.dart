@@ -1,27 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:lifematch_frontend/features/team_management/widgets/custom_bottom_nav_bar.dart';
-import 'package:lifematch_frontend/features/team_management/screens/team_management_screen.dart';
 import 'package:lifematch_frontend/core/services/storage_service.dart';
+import 'package:lifematch_frontend/features/notification/services/notification_service.dart'; // ⭐️ [추가] NotificationService import
 import '../models/group_model.dart';
-import '../services/group_service.dart';
+import '../services/group_service.dart'; // GroupService가 getGroupDetail을 제공한다고 가정
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 // 2. ⭐️ (핵심) 버튼 타입 정의 (기존과 동일)
 enum GroupDetailButtonType {
-  none,//팀원이 소모임 세부사항 볼 때
-  join,//오늘의 추천활동 세부사항
-  joinOrInquire,//문의 or 참가신청
-  acceptOrDecline,//참가신청 수락 or 거절
+  none, //팀원이 소모임 세부사항 볼 때
+  join, //오늘의 추천활동 세부사항
+  joinOrInquire, //문의 or 참가신청
+  acceptOrDecline, //참가신청 수락 or 거절
 }
 
 // 3. ⭐️ GroupDetailScreen (기존과 동일)
 class GroupDetailScreen extends StatefulWidget {
   final GroupDetailButtonType buttonType;
   final String groupId;
+  final String? actionId;
 
   const GroupDetailScreen({
     super.key,
     required this.buttonType,
     required this.groupId,
+    this.actionId,
   });
 
   @override
@@ -31,55 +35,166 @@ class GroupDetailScreen extends StatefulWidget {
 class _GroupDetailScreenState extends State<GroupDetailScreen> {
   final StorageService _storageService = StorageService();
   final GroupService _groupService = GroupService();
+  final NotificationService _notificationService = NotificationService(); // ⭐️ [추가] NotificationService 인스턴스
 
   bool _isLoading = true;
   bool _hasError = false;
 
+  // ⭐️ 로딩이 완료된 후 GroupModel 객체를 가리킬 변수
   late GroupModel _groupDetail;
 
   String? _myUserDocId;
 
+  // ⭐️ [이전 피드백 반영] leaderNickname 상태 변수 삭제 (GroupModel에서 직접 접근)
+
   @override
   void initState() {
     super.initState();
-    _fetchGroupDetail();
+    _fetchGroupDetailsAndUserId();
   }
 
-
-  Future<void> _fetchGroupDetail() async {
+  // ✅ 그룹 상세 정보와 유저 ID를 모두 로드하는 통합 함수 (기존 로직 유지)
+  Future<void> _fetchGroupDetailsAndUserId() async {
     try {
-      // ⭐️ 3. 사용자 ID를 로드
+      // 1. 사용자 ID 로드
       final String? userId = await _storageService.getUserId();
       if (userId == null) {
         throw Exception("로그인된 사용자 ID를 찾을 수 없습니다. 다시 로그인 해주세요.");
       }
 
-      final GroupModel detail = await _groupService.getGroupDetail(widget.groupId);
+      // 2. 그룹 상세 정보 로드 (HTTP 직접 호출)
+      final url = Uri.parse("http://10.0.2.2:8000/api/group/${widget.groupId}");
+      final response = await http.get(url);
 
-      setState(() {
-        _groupDetail = detail;
-        _myUserDocId = userId; // ⭐️ 로드된 사용자 ID 저장
-        _isLoading = false;
-        _hasError = false;
-      });
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
 
+        setState(() {
+          _groupDetail = GroupModel.fromJson(data, widget.groupId);
+          _myUserDocId = userId;
+          _isLoading = false;
+          _hasError = false;
+        });
+      } else {
+        print("❌ 그룹 상세 정보 로드 실패: ${response.statusCode}");
+        throw Exception("서버 응답 오류: ${response.statusCode}");
+      }
     } catch (e) {
       print("❌ 그룹 상세 정보 로딩/유저 ID 로딩 실패: $e");
       setState(() {
         _isLoading = false;
         _hasError = true;
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('모임 정보를 불러오는 데 실패했습니다: ${e.toString()}')),
+        );
+      }
+    }
+  }
+  Future<void> _handleApplyJoin() async {
+    if (_myUserDocId == null || widget.groupId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('모임 정보를 불러오는 데 실패했습니다: ${e.toString()}')),
+        const SnackBar(content: Text('사용자 정보 또는 그룹 정보가 누락되었습니다.')),
+      );
+      return;
+    }
+
+    try {
+      // ⭐️ [참고] GroupService나 NotificationService를 통해 baseUrl을 가져오는 것이 이상적이지만,
+      // 현재 구조상 http.post를 직접 사용하며 URL을 구성합니다.
+
+      // NotificationService와 동일한 URL을 사용합니다.
+      const String finalBaseUrl = NotificationService.baseUrl;
+
+      final token = await _storageService.getToken(); // StorageService를 통해 토큰을 가져옵니다.
+
+      if (token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('로그인 토큰이 필요합니다.')),
+        );
+        return;
+      }
+
+      final response = await http.post(
+        Uri.parse("$finalBaseUrl/api/group-action/apply"),
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "group_id": widget.groupId, // group_id만 전송 (user_id는 JWT에서 추출)
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ 그룹 가입 신청이 완료되었습니다.')),
+        );
+        if (mounted) {
+          Navigator.pop(context); // 신청 후 이전 화면으로 돌아갑니다.
+        }
+      } else {
+        print("❌ 신청 실패 (${response.statusCode}): ${response.body}");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ 신청 실패: 서버 오류 (${response.statusCode})')),
+        );
+      }
+    } catch (e) {
+      print("❌ 신청 중 오류 발생: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('❌ 신청 중 오류 발생: ${e.toString()}')),
       );
     }
   }
+  // ⭐️ [신규 함수] 수락/거절 API 호출 및 후처리
+  Future<void> _handleAcceptDecline(String actionType) async {
+    if (widget.actionId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('처리할 신청 ID가 없습니다.')),
+      );
+      return;
+    }
+    // 로딩 인디케이터 표시 (선택 사항)
+    // showDialog(context: context, builder: (context) => const Center(child: CircularProgressIndicator()));
 
-  // --- 4. ⭐️ 색상 정의 (기존과 동일) ---
+    try {
+      final bool success = await _notificationService.respondToAction(
+        widget.actionId!,
+        actionType, // "accept" 또는 "decline"
+      );
+
+      // Navigator.pop(context); // 로딩 인디케이터 닫기 (선택 사항)
+
+      if (success) {
+        final String message = (actionType == 'accept' ? '수락' : '거절') + ' 처리되었습니다.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+        // 처리 후 이전 화면으로 돌아가기 (예: 알림 목록)
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/notification');
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('처리 실패: 서버 응답 오류')),
+        );
+      }
+    } catch (e) {
+      // Navigator.pop(context); // 로딩 인디케이터 닫기 (선택 사항)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('처리 중 오류 발생: ${e.toString()}')),
+      );
+      print("❌ 액션 처리 오류: $e");
+    }
+  }
+
+
+  // --- 4. ⭐️ 색상 정의 (유지) ---
   final Color _borderColor = const Color(0xFF4C6DAF);
   final Color _buttonColor70 = const Color(0xFF4C6DAF).withOpacity(0.7);
 
-  // --- 5. ⭐️ 하단 내비게이션 탭 핸들러 (기존과 동일) ---
+  // --- 5. ⭐️ 하단 내비게이션 탭 핸들러 (유지) ---
   void _handleBottomTap(String tag) {
     switch (tag) {
       case 'home':
@@ -89,10 +204,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
       case 'chat':
         print('💬 채팅 탭');
         Navigator.pushNamed(context, '/chat');
+        break;
       case 'connection':
         print('🔗 소모임 연결');
         Navigator.pushNamed(context, '/my-group-manage');
-        break;
         break;
       case 'bell':
         print('🔔 알림 탭');
@@ -107,10 +222,30 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_hasError) {
+      return const Scaffold(
+        body: Center(child: Text("정보를 로드할 수 없습니다.")),
+      );
+    }
+
+    // ⭐️ 로드된 데이터 사용 (GroupModel)
+    final groupName = _groupDetail.groupName;
+    final groupCategory = _groupDetail.category ?? '미정';
+    final groupDescription = _groupDetail.description ?? '설명 없음';
+    final currentCapacity = _groupDetail.currentMember;
+    final maxCapacity = _groupDetail.maxMember;
+    final leaderNickname = _groupDetail.leaderNickname; // ⭐️ GroupModel에서 직접 접근
+
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        // ... (AppBar는 기존과 동일)
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
@@ -122,31 +257,23 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
         centerTitle: true,
       ),
 
-      // 6. ⭐️ (수정) persistent... 속성 2줄 완전 삭제
-      // persistentFooterButtons: ... (삭제)
-      // persistentFooterButtonAlignment: ... (삭제)
-
-      // 7. ⭐️ 하단 내비게이션 바 (기존과 동일)
       bottomNavigationBar: CustomBottomNavBar(
         onTabSelected: _handleBottomTap,
       ),
 
-      // 8. ⭐️ (수정) body 구조 변경
-      body: Column( // 👈 1. body를 Column으로
+      body: Column(
         children: [
-          // 2. 콘텐츠 영역 (스크롤 가능)
-          Expanded( // 👈 2. Expanded로 감싸서 남은 공간 모두 차지
+          Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const SizedBox(height: 16),
-                  // 소모임 대표 이미지
+                  // 소모임 대표 이미지 (유지)
                   Container(
                     width: 150,
                     height: 150,
-                    // ... (이미지 스타일 동일)
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.grey.shade400, width: 1),
                       borderRadius: BorderRadius.circular(16),
@@ -154,7 +281,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                     ),
                     child: Center(
                       child: Image.asset(
-                        'assets/images/logo_icon.png', // (데이터)
+                        'assets/images/logo_icon.png',
                         fit: BoxFit.contain,
                         width: 100,
                         height: 100,
@@ -163,10 +290,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // 소모임 이름
-                  const Text(
-                    '[소모임 이름]', // (데이터)
-                    style: TextStyle(
+                  // ⭐️ 소모임 이름 (데이터 연결)
+                  Text(
+                    groupName,
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
@@ -174,7 +301,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                   ),
                   const SizedBox(height: 30),
 
-                  // 모임 정보 프레임 (기존과 동일)
+                  // 모임 정보 프레임
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -184,13 +311,17 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildInfoRow('모임 주제 :', '투자ㆍ소비습관'), // (데이터)
+                        // ⭐️ 모임 주제 (데이터 연결)
+                        _buildInfoRow('모임 주제 :', groupCategory),
                         const SizedBox(height: 15),
-                        _buildInfoRow('인원 수 :', '6/10명'), // (데이터)
+                        // ⭐️ 인원 수 (데이터 연결)
+                        _buildInfoRow('인원 수 :', '$currentCapacity/$maxCapacity명'),
                         const SizedBox(height: 15),
-                        _buildInfoRow('모임 설명 :', '이 모임은 소비 습관을 개선하고 함께 투자 공부를 하는 모임입니다.'), // (데이터)
+                        // ⭐️ 모임 설명 (데이터 연결)
+                        _buildInfoRow('모임 설명 :', groupDescription),
                         const SizedBox(height: 25),
-                        // ... (팀장 정보 Row 동일)
+
+                        // 팀장 정보 Row
                         Row(
                           children: [
                             Container(
@@ -207,16 +338,16 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  '[팀장 닉네임]', // (데이터)
-                                  style: TextStyle(
+                                Text(
+                                  '팀장 닉네임: $leaderNickname',
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black87,
                                   ),
                                 ),
                                 Text(
-                                  '관심사 : 유저 관심사', // (데이터)
+                                  '관심사 : 유저 관심사', // (임시 데이터)
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey.shade600,
@@ -229,20 +360,18 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20), // ⭐️ 하단 여백 (버튼과 겹치지 않게)
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
-          ), // 👈 2. Expanded 끝
+          ),
 
-          // 3. ⭐️ 하단 버튼 영역 (Column의 두 번째 자식)
-          // (이 영역은 스크롤되지 않고 항상 하단에 고정됨)
+          // 3. ⭐️ 하단 버튼 영역
           _buildPersistentButtons(widget.buttonType),
 
-          // 4. ⭐️ (필수) 하단 내비게이션 바 만큼의 안전 영역 확보
-          // (버튼이 바에 가려지지 않도록)
+          // 4. ⭐️ 안전 영역 확보
           SafeArea(
-            top: false, // 위쪽은 무시
+            top: false,
             child: Container(),
           ),
         ],
@@ -250,62 +379,52 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
     );
   }
 
-  // --- 10. ⭐️ (수정) 버튼 생성 헬퍼 함수 ---
-  // (반환 타입이 List<Widget>? -> Widget으로 변경)
+  // --- 10. ⭐️ 버튼 생성 헬퍼 함수 (수락/거절 로직 추가) ---
   Widget _buildPersistentButtons(GroupDetailButtonType type) {
-    // ⭐️ (수정) 버튼을 담을 컨테이너 추가
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-      // ⭐️ (선택) 버튼 영역 배경색
-      // color: Colors.white,
       child: switch (type) {
-      // 10-1. 버튼 없음
-        GroupDetailButtonType.none =>
-        const SizedBox.shrink(), // 👈 1. 빈 위젯 반환
-
-      // 10-2. 참가 신청
+        GroupDetailButtonType.none => const SizedBox.shrink(),
         GroupDetailButtonType.join =>
-            _buildOneButton( // 👈 2. Row/List 없이 버튼 위젯 바로 반환
+            _buildOneButton(
               text: '참가신청',
               color: _buttonColor70,
               onPressed: () {
-                print('참가신청 클릭!');
+                // ⭐️ [연결] 참가 신청 로직 연결
+                _handleApplyJoin();
               },
             ),
-
-      // 10-3. 문의 / 참가
         GroupDetailButtonType.joinOrInquire =>
-            _buildTwoButtons( // 👈 3. Row가 담긴 위젯 반환
+            _buildTwoButtons(
               text1: '문의하기',
               text2: '참가신청',
               onPressed1: () {
                 print('문의하기 클릭!');
               },
               onPressed2: () {
-                print('참가신청 클릭!');
+                // ⭐️ [연결] 참가 신청 로직 연결
+                _handleApplyJoin();
               },
             ),
-
-      // 10-4. 거절 / 수락
         GroupDetailButtonType.acceptOrDecline =>
-            _buildTwoButtons( // 👈 4. Row가 담긴 위젯 반환
+            _buildTwoButtons(
               text1: '거절',
               text2: '수락',
               onPressed1: () {
-                print('거절 클릭!');
+                // ⭐️ [수정] 거절 로직 연결
+                _handleAcceptDecline('decline');
               },
               onPressed2: () {
-                print('수락 클릭!');
+                // ⭐️ [수정] 수락 로직 연결
+                _handleAcceptDecline('accept');
               },
             )
       },
     );
   }
 
-  // --- 11. ⭐️ 버튼 스타일 헬퍼 (기존과 동일, Padding만 제거) ---
-
-  // (버튼 1개)
+  // --- 11. ⭐️ 버튼 스타일 헬퍼 (유지) ---
   Widget _buildOneButton({
     required String text,
     required Color color,
@@ -330,17 +449,16 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
     );
   }
 
-  // (버튼 2개)
   Widget _buildTwoButtons({
     required String text1,
     required String text2,
     required VoidCallback onPressed1,
     required VoidCallback onPressed2,
   }) {
-    final Color buttonColor1 = _buttonColor70;
+    final Color buttonColor1 = Colors.grey; // 거절은 회색으로 변경 (선택 사항)
     final Color buttonColor2 = _buttonColor70;
 
-    return Row( // 👈 Row 위젯을 바로 반환
+    return Row(
       children: [
         Expanded(
           child: ElevatedButton(
@@ -379,7 +497,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
     );
   }
 
-  // --- 12. ⭐️ 정보 행(Row) 스타일 헬퍼 (기존과 동일) ---
+  // --- 12. ⭐️ 정보 행(Row) 스타일 헬퍼 (유지) ---
   Widget _buildInfoRow(String label, String value) {
     bool isMultiline = label.contains("설명");
     return Row(
@@ -404,7 +522,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              value, // (데이터)
+              value,
               style: TextStyle(
                 fontSize: 15,
                 color: Colors.grey.shade700,

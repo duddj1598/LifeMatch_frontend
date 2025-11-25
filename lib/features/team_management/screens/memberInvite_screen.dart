@@ -5,11 +5,13 @@ import 'package:lifematch_frontend/features/team_management/screens/team_managem
 
 // 🔹 팀원 데이터 모델
 class TeamMember {
+  final String userId;
   final String nickname;
   final String interest;
   bool isInvited;
 
   TeamMember({
+    required this.userId,
     required this.nickname,
     required this.interest,
     this.isInvited = false,
@@ -36,7 +38,7 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
   final List<TeamMember> _suggestedMembers = [];
   final TextEditingController _searchController = TextEditingController();
 
-  int _newMemberCounter = 1;
+  // int _newMemberCounter = 1; // ⭐️ 제거: 더보기 기능에 사용됨
 
   @override
   void dispose() {
@@ -76,6 +78,7 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
           _suggestedMembers.addAll(
             idList.map((panelId) {
               return TeamMember(
+                userId: panelId as String,
                 nickname: shorten("$panelId"), // 🔹 여기 적용됨
                 interest: "관심사 정보 없음",
               );
@@ -87,6 +90,43 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
       }
     } catch (e) {
       print("❌ 네트워크 오류: $e");
+    }
+  }
+
+  // 🔥 초대 API 호출 함수
+  Future<bool> _sendInvite(String targetUserId) async {
+    const url = "http://10.0.2.2:8000/api/group-action/invite"; // ⭐️ API 엔드포인트
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "group_id": widget.groupId, // 현재 화면의 그룹 ID
+          "user_id": targetUserId, // 초대할 유저의 ID
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final res = jsonDecode(response.body);
+        print("✅ 초대 성공: ${res['message']}");
+        return true;
+      } else {
+        final errorBody = jsonDecode(response.body);
+        final detail = errorBody['detail'] ?? "초대 요청 처리 실패";
+        print("❌ 초대 API 오류: $detail");
+        // 사용자에게 실패 메시지 표시
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("초대 실패: $detail")),
+        );
+        return false;
+      }
+    } catch (e) {
+      print("❌ 네트워크/파싱 오류: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("네트워크 오류가 발생했습니다.")),
+      );
+      return false;
     }
   }
 
@@ -172,13 +212,11 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
                 ),
                 child: ListView.builder(
                   padding: const EdgeInsets.all(8.0),
-                  itemCount: _suggestedMembers.length + 1,
+                  // ⭐️ 수정: 더보기 버튼이 없으므로, suggestedMembers의 길이만큼만 빌드
+                  itemCount: _suggestedMembers.length,
                   itemBuilder: (context, index) {
-                    if (index == _suggestedMembers.length) {
-                      return _buildProfileMoreButton();
-                    } else {
-                      return _buildTeamMemberCard(_suggestedMembers[index]);
-                    }
+                    // ⭐️ 수정: 바로 팀원 카드를 빌드
+                    return _buildTeamMemberCard(_suggestedMembers[index]);
                   },
                 ),
               ),
@@ -239,29 +277,7 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
     );
   }
 
-  // ✔ 프로필 더보기
-  Widget _buildProfileMoreButton() {
-    return TextButton(
-      onPressed: () {
-        setState(() {
-          for (int i = 0; i < 5; i++) {
-            _suggestedMembers.add(
-              TeamMember(
-                nickname: shorten("새 멤버 $_newMemberCounter"),
-                interest: "추가 관심사",
-              ),
-            );
-            _newMemberCounter++;
-          }
-        });
-      },
-      child: const Text(
-        '프로필 더보기',
-        style: TextStyle(
-            fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF4C6DAF)),
-      ),
-    );
-  }
+  // ⭐️ 제거: _buildProfileMoreButton 함수 전체 제거
 
   // ✔ 팀원 카드 UI
   Widget _buildTeamMemberCard(TeamMember member) {
@@ -315,11 +331,15 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
           ElevatedButton(
             onPressed: member.isInvited
                 ? null
-                : () {
-              setState(() => member.isInvited = true);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("${member.nickname}님을 초대했습니다.")),
-              );
+                : () async { // ⭐️ async로 변경
+              final success = await _sendInvite(member.userId); // ⭐️ API 호출
+
+              if (success) {
+                setState(() => member.isInvited = true);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("${member.nickname}님을 초대했습니다.")),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: member.isInvited
