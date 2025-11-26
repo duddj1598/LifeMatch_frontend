@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:lifematch_frontend/features/team_management/screens/team_management_screen.dart';
-
-// ⭐️ [추가/수정] GroupModel 정의 파일을 import 해야 합니다.
-import 'package:lifematch_frontend/features/group/models/group_model.dart'; // GroupModel 경로 가정
+import 'package:lifematch_frontend/features/group/models/group_model.dart';
+import 'package:lifematch_frontend/core/services/storage_service.dart';
 
 // 🔹 팀원 데이터 모델
 class TeamMember {
@@ -21,9 +20,6 @@ class TeamMember {
   });
 }
 
-// ------------------------------------------------------------------
-// ⭐️ [수정] MemberInviteScreen (GroupModel 사용)
-// ------------------------------------------------------------------
 class MemberInviteScreen extends StatefulWidget {
   final String groupId;
   final GroupModel? initialGroupDetail; // ⭐️ [수정] GroupDetail -> GroupModel
@@ -43,8 +39,10 @@ class MemberInviteScreen extends StatefulWidget {
 class _MemberInviteScreenState extends State<MemberInviteScreen> {
   final List<TeamMember> _suggestedMembers = [];
   final TextEditingController _searchController = TextEditingController();
+  final StorageService _storageService = StorageService();
 
-  // int _newMemberCounter = 1; // ⭐️ 제거: 더보기 기능에 사용됨
+  String _currentQuery = "";
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -58,9 +56,39 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
     return text.substring(0, maxLength) + "...";
   }
 
+  void _performSearch() {
+    final query = _searchController.text.trim();
+
+    // 키보드 숨기기 (UX 개선)
+    //FocusScope.of(context).unfocus();
+
+    // 이전 검색과 동일하면 API 호출 방지
+    if (query == _currentQuery) {
+      return;
+    }
+
+    setState(() {
+      _currentQuery = query; // 현재 쿼리 업데이트
+    });
+
+    // API 호출 실행
+    _searchPanelMembers(query);
+  }
+
   // 🔥 패널 검색 API 연동 (유지)
   Future<void> _searchPanelMembers(String query) async {
-    if (query.trim().isEmpty) return;
+    if (!mounted) return;
+
+    if (query.isEmpty) {
+      setState(() {
+        _suggestedMembers.clear();
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
 
     final url = Uri.parse("http://10.0.2.2:8000/api/panel/search");
 
@@ -70,7 +98,7 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "query": query,
-          "category": widget.selectedCategory,  // 🔥 카테고리 전송!
+          "category": widget.selectedCategory,
         }),
       );
 
@@ -79,13 +107,15 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
 
         final List<dynamic> idList = res["id"] ?? [];
 
+        if (!mounted) return;
         setState(() {
           _suggestedMembers.clear();
           _suggestedMembers.addAll(
             idList.map((panelId) {
               return TeamMember(
                 userId: panelId as String,
-                nickname: shorten("$panelId"), // 🔹 여기 적용됨
+                // userId가 패널 ID라면 닉네임은 실제 닉네임으로 교체해야 함
+                nickname: shorten("$panelId"),
                 interest: "관심사 정보 없음",
               );
             }),
@@ -93,23 +123,45 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
         });
       } else {
         print("❌ API 오류: ${response.body}");
+        if (!mounted) return;
+        setState(() {
+          _suggestedMembers.clear();
+        });
       }
     } catch (e) {
       print("❌ 네트워크 오류: $e");
+      if (!mounted) return;
+      setState(() {
+        _suggestedMembers.clear();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   // 🔥 초대 API 호출 함수 (유지)
   Future<bool> _sendInvite(String targetUserId) async {
     const url = "http://10.0.2.2:8000/api/group-action/invite"; // ⭐️ API 엔드포인트
+    final String? accessToken = await _storageService.getToken();
+
+    if (accessToken == null || accessToken.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("초대를 위해 먼저 로그인해야 합니다.")),
+      );
+      return false;
+    }
 
     try {
       final response = await http.post(
         Uri.parse(url),
-        headers: {"Content-Type": "application/json"},
+        headers: {"Content-Type": "application/json","Authorization": "Bearer $accessToken",},
         body: jsonEncode({
-          "group_id": widget.groupId, // 현재 화면의 그룹 ID
-          "user_id": targetUserId, // 초대할 유저의 ID
+          "group_id": widget.groupId,// 현재 화면의 그룹 ID
+          "user_id": targetUserId
         }),
       );
 
@@ -187,11 +239,14 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
               controller: _searchController,
               decoration: _buildInputDecoration(
                 '원하는 팀원을 검색해보세요!',
-                prefixIcon: const Icon(Icons.search, color: Color(0xFF4C6DAF)),
+                prefixIcon: IconButton(
+                  icon: const Icon(Icons.search, color: Color(0xFF4C6DAF)),
+                  onPressed: _performSearch, // ⭐️ 돋보기 아이콘 클릭 시 검색 실행
+                ),
               ),
-              onChanged: (value) {
-                _searchPanelMembers(value);
-              },
+              onSubmitted: (value) {
+              _performSearch();
+            },
             ),
 
             const SizedBox(height: 20),
@@ -199,7 +254,7 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                '[소모임 이름]에 어울리는 팀원이에요!', // ⭐️ 소모임 이름 표시를 위해 widget.initialGroupDetail?.groupName 등을 사용할 수 있음
+                '${widget.initialGroupDetail?.groupName}에 어울리는 팀원이에요!', // ⭐️ 소모임 이름 표시를 위해 widget.initialGroupDetail?.groupName 등을 사용할 수 있음
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,

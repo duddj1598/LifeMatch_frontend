@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lifematch_frontend/features/group/screens/group_detail_screen.dart';
-import 'package:lifematch_frontend/features/team_management/screens/team_management_screen.dart';
 import 'package:lifematch_frontend/features/team_management/widgets/custom_bottom_nav_bar.dart';
 import 'package:lifematch_frontend/features/group/services/group_service.dart';
 import 'package:lifematch_frontend/features/group/models/group_model.dart';
@@ -20,15 +19,30 @@ class TeamDetailScreen extends StatefulWidget {
 
 
 class _TeamDetailScreenState extends State<TeamDetailScreen> {
-  bool isCreateSelected = true;
+  bool isCreateSelected = true; // ⭐️ 기본 탭을 '소모임 참여'로 변경 (목록이 먼저 보이도록)
   final GroupService _groupService = GroupService();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _capacityController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
+
+  String _searchQuery = "";
+
+  List<GroupModel> _filteredGroupList = [];
+  bool _isGroupListLoading = true;
+
+
+  @override
+  void initState() {
+    super.initState();
+    // ⭐️ [추가] 카테고리 기반으로 소모임 목록을 로드하는 함수 호출
+    _fetchFilteredGroupList(widget.selectedCategory, _searchQuery);
+  }
 
   @override
   void dispose() {
+    _searchController.dispose();
     _nameController.dispose();
     _descController.dispose();
     _locationController.dispose();
@@ -36,18 +50,92 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     super.dispose();
   }
 
-  // ⭐️ 그룹 목록 Mock 데이터
-  final List<Map<String, String>> _groupList = [
-    {"groupId": "join-id-a", "title": "[소모임 이름 A]", "topic": "투자ㆍ소비습관"},
-    {"groupId": "join-id-b", "title": "[소모임 이름 B]", "topic": "투자ㆍ소비습관"},
-    {"groupId": "join-id-c", "title": "[소모임 이름 C]", "topic": "투자ㆍ소비습관"},
-    {"groupId": "join-id-d", "title": "[소모임 이름 D]", "topic": "투자ㆍ소비습관"},
-    {"groupId": "join-id-e", "title": "[소모임 이름 E]", "topic": "투자ㆍ소비습관"},
-    {"groupId": "join-id-f", "title": "[소모임 이름 F]", "topic": "운동ㆍ헬스"},
-    {"groupId": "join-id-g", "title": "[소모임 이름 G]", "topic": "맛집 탐방"},
-    {"groupId": "join-id-h", "title": "[소모임 이름 H]", "topic": "반려동물"},
-    {"groupId": "join-id-i", "title": "[소모임 이름 I]", "topic": "코딩 스터디"},
-  ];
+  void _performSearch() {
+    final query = _searchController.text.trim();
+
+    // 키보드 숨기기 (UX 개선)
+    FocusScope.of(context).unfocus();
+
+    // 불필요한 API 호출 방지 (검색어가 이전과 같을 경우)
+    if (query == _searchQuery) {
+      return;
+    }
+
+    setState(() {
+      _searchQuery = query; // 최종 검색어로 상태 업데이트
+    });
+
+    // API 호출
+    _fetchFilteredGroupList(widget.selectedCategory, _searchQuery);
+  }
+
+  Future<void> _fetchFilteredGroupList(String category, String query) async {
+    if (!mounted) return;
+    // 검색어가 변경될 때 로딩 상태를 보여주기 위해 잠시 true로 설정
+    setState(() {
+      _isGroupListLoading = true;
+    });
+
+    try {
+      // ⭐️ GroupService에 category와 query(q)를 모두 전달
+      final List<GroupModel> groups = await _groupService.getGroupList(
+        category: category,
+        q: query, // ⭐️ 검색어 전달
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _filteredGroupList = groups;
+        _isGroupListLoading = false;
+        print("✅ 카테고리 '$category'에서 검색어 '$query'로 그룹 ${_filteredGroupList.length}개 로드 완료.");
+      });
+    } catch (e) {
+      print("❌ 그룹 목록 로딩 실패: $e");
+      if (!mounted) return;
+      setState(() {
+        _isGroupListLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('소모임 목록을 불러오는 데 실패했습니다: ${e.toString()}')),
+      );
+    }
+  }
+
+
+  // ⭐️ [Mock] Mock 데이터 필터링 로직 (GroupModel 변환 포함)
+  List<GroupModel> _applyMockFilter(String category) {
+    // ⭐️ 기존 Mock 데이터를 GroupModel 형태로 변환하여 사용한다고 가정합니다.
+    final List<Map<String, dynamic>> rawMockData = [
+      {"groupId": "join-id-a", "title": "[소모임 이름 A]", "topic": "소비 · 경제", "current": 3, "max": 10},
+      {"groupId": "join-id-b", "title": "[소모임 이름 B]", "topic": "소비 · 경제", "current": 5, "max": 8},
+      {"groupId": "join-id-c", "title": "[소모임 이름 C]", "topic": "생활습관 · 건강", "current": 2, "max": 5},
+      {"groupId": "join-id-d", "title": "[소모임 이름 D]", "topic": "기술", "current": 8, "max": 10},
+      {"groupId": "join-id-e", "title": "[소모임 이름 E]", "topic": "여가 · 문화", "current": 1, "max": 4},
+      // HomeScreen에서 선택 가능한 카테고리명과 일치하는 항목 추가
+      {"groupId": "join-id-f", "title": "경제 스터디", "topic": "소비 · 경제", "current": 4, "max": 7},
+      {"groupId": "join-id-g", "title": "주말 등산 모임", "topic": "생활습관 · 건강", "current": 6, "max": 12},
+    ];
+
+    // ⭐️ 선택된 카테고리로 필터링
+    final filteredRaw = rawMockData.where((g) => g['topic'] == category).toList();
+
+    // ⭐️ Map을 GroupModel로 변환
+    return filteredRaw.map((raw) => GroupModel(
+      id: raw['groupId'],
+      groupName: raw['title'],
+      category: raw['topic'],
+      currentMember: raw['current'],
+      maxMember: raw['max'],
+      leaderId: 'mock-leader',
+      leaderNickname: '리더',
+      description: 'Mock 그룹입니다.',
+      groupImage: null,
+      createdAt: '2025-01-01T00:00:00Z',
+      chatId: 'mock-chat-id',
+      members: List.generate(raw['current'], (index) => '멤버 ${index + 1}'),
+    )).toList();
+  }
+
 
   int _groupCounter = 1;
 
@@ -72,7 +160,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   }
 
   // =================================================================
-  // ⭐️ 1. BUILD WIDGETS (생략된 위젯 코드)
+  // ⭐️ 1. BUILD WIDGETS (수정된 위젯 코드)
   // =================================================================
 
   // --- "소모임 개설" 폼 ---
@@ -163,34 +251,58 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
-  // --- "소모임 참여" 목록 ---
+  // --- "소모임 참여" 목록 (수정됨: 로딩 및 필터링 적용) ---
   Widget _buildJoinList(BuildContext context) {
+
+    // ⭐️ 1. 검색창은 리스트의 유무와 관계없이 항상 상단에 위치
     return Column(
       children: [
-        // 검색창
+        // ⭐️ 검색창: 항상 표시
         _buildSearchBar(),
         const SizedBox(height: 20),
 
-        // 소모임 목록
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.zero,
-          itemCount: _groupList.length + 1,
-          itemBuilder: (context, index) {
-            if (index == _groupList.length) {
-              return _buildGroupMoreButton();
-            } else {
-              final group = _groupList[index];
-              return _buildGroupListItem(
-                context,
-                group['title']!,
-                group['topic']!,
-                group['groupId']!,
-              );
-            }
-          },
-        ),
+        // ⭐️ 2. 로딩 상태 처리
+        if (_isGroupListLoading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 40.0),
+              child: CircularProgressIndicator(color: Color(0xFF6B7AA1)),
+            ),
+          )
+
+        // ⭐️ 3. 검색 결과가 비어 있을 때 메시지 표시
+        else if (_filteredGroupList.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40.0),
+              child: Text(
+                _searchQuery.isEmpty
+                    ? "'${widget.selectedCategory}' 카테고리의 소모임이 없습니다."
+                    : "검색어 '$_searchQuery'에 해당하는 소모임이 없습니다.",
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          )
+
+        // ⭐️ 4. 검색 결과가 있을 때 목록 표시
+        else
+          Column(
+            children: [
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
+                itemCount: _filteredGroupList.length,
+                itemBuilder: (context, index) {
+                  final group = _filteredGroupList[index];
+                  return _buildGroupListItem(context, group);
+                },
+              ),
+              // 검색 기능이 활성화되었으므로 '더보기' 버튼은 일반적으로 목록 끝에 추가되지 않습니다.
+              // 필요하다면 여기에 _buildGroupMoreButton()을 추가하세요.
+            ],
+          ),
       ],
     );
   }
@@ -204,9 +316,17 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
+        controller: _searchController,
+        onSubmitted: (value) {
+          _performSearch();
+        },
+        // ⭐️ [개선] 현재 카테고리를 검색 힌트로 제공
         decoration: InputDecoration(
-          hintText: "관심 있는 주제를 검색해보세요.",
-          prefixIcon: const Icon(Icons.search, color: Color(0xFF6B7AA1)),
+          hintText: "${widget.selectedCategory} 내에서 검색해보세요.",
+          prefixIcon: IconButton(
+            icon: const Icon(Icons.search, color: Color(0xFF6B7AA1)),
+            onPressed: _performSearch, // ⭐️ 돋보기 아이콘 클릭 시 검색 실행
+          ),
           filled: true,
           fillColor: Colors.transparent,
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -228,8 +348,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   }
 
 
-// 🔹 소모임 목록 아이템 위젯
-  Widget _buildGroupListItem(BuildContext context, String title, String topic, String groupId) {
+  // 🔹 소모임 목록 아이템 위젯 (GroupModel 받도록 수정)
+  Widget _buildGroupListItem(BuildContext context, GroupModel group) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -270,13 +390,13 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  group.groupName, // ⭐️ GroupModel 필드 사용
                   style: const TextStyle(
                       fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "주제 : $topic",
+                  "주제 : ${group.category ?? '미정'} | 인원: ${group.currentMember}/${group.maxMember}", // ⭐️ GroupModel 필드 사용
                   style: const TextStyle(fontSize: 13, color: Colors.grey),
                 ),
               ],
@@ -287,13 +407,13 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           // 세부정보 버튼
           ElevatedButton(
             onPressed: () {
-              print("페이지 이동! (세부정보: $title) - GroupDetailScreen으로 이동 (ID: $groupId)");
+              print("페이지 이동! (세부정보: ${group.groupName}) - GroupDetailScreen으로 이동 (ID: ${group.id})");
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => GroupDetailScreen(
                     buttonType: GroupDetailButtonType.joinOrInquire,
-                    groupId: groupId,
+                    groupId: group.id, // ⭐️ GroupModel 필드 사용
                   ),
                 ),
               );
@@ -313,26 +433,32 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
-  // ⭐️ "더보기" 버튼 위젯 및 로직
+  // ⭐️ "더보기" 버튼 위젯 및 로직 (API 로직으로 변경 필요)
   Widget _buildGroupMoreButton() {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextButton(
         onPressed: () {
-          // 5개 추가 로직
+          // ⭐️ 실제 구현 시: API의 다음 페이지를 로드하는 로직으로 대체해야 합니다.
+          print("⚠️ 소모임 더보기 클릭: 다음 페이지 API 호출 로직 필요");
+
+          // Mock 데이터 추가 로직 (임시)
           setState(() {
-            List<Map<String, String>> newGroups = [];
-            for (int i = 0; i < 5; i++) {
-              newGroups.add(
-                  {
-                    "groupId": "new-join-id-$_groupCounter",
-                    "title": "새 소모임 $_groupCounter",
-                    "topic": "추가 주제"
-                  }
-              );
+            List<GroupModel> newGroups = [];
+            for (int i = 0; i < 3; i++) { // 3개만 추가하도록 수정
+              newGroups.add(GroupModel(
+                id: "new-join-id-$_groupCounter",
+                groupName: "추가 소모임 $_groupCounter",
+                category: widget.selectedCategory,
+                currentMember: 1, maxMember: 5,
+                leaderId: 'mock-leader', leaderNickname: '리더',
+                description: '추가된 Mock 그룹입니다.',
+                groupImage: null, createdAt: '2025-01-01T00:00:00Z', chatId: 'mock-chat-id',
+                members: ['멤버 1'],
+              ));
               _groupCounter++;
             }
-            _groupList.addAll(newGroups);
+            _filteredGroupList.addAll(newGroups);
           });
         },
         child: const Text(
@@ -347,7 +473,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
-  // 🔹 재사용 가능한 텍스트필드 위젯
+  // 🔹 재사용 가능한 텍스트필드 위젯 (유지)
   Widget _buildTextField(String label, String hint, {TextEditingController? controller, bool isNumber = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -378,7 +504,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
-  // 🔹 소모임 개설/참여 버튼
+  // 🔹 소모임 개설/참여 버튼 (유지)
   Widget _buildSelectButton(String text, bool isCreate) {
     final isSelected = (isCreateSelected == isCreate);
     return Expanded(
@@ -426,7 +552,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
-  // ⭐️ API 호출 및 다음 화면 이동 함수
+  // ⭐️ API 호출 및 다음 화면 이동 함수 (유지)
   Future<void> _createGroupAndNavigate(BuildContext context) async {
     final name = _nameController.text;
     final desc = _descController.text;
@@ -520,8 +646,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             if(isCreateSelected)
               _buildCreateForm(context)
             else
-              _buildJoinList(context)
-
+              _buildJoinList(context) // ⭐️ 필터링된 목록을 출력
           ],
         ),
       ),
