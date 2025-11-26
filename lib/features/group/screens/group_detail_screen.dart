@@ -7,7 +7,6 @@ import '../models/group_model.dart';
 import '../services/group_service.dart'; // GroupService가 getGroupDetail을 제공한다고 가정
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:lifematch_frontend/features/chat/services/chat_service.dart';
 
 // 2. ⭐️ (핵심) 버튼 타입 정의 (기존과 동일)
 enum GroupDetailButtonType {

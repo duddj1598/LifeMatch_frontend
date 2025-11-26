@@ -6,8 +6,10 @@ import 'package:lifematch_frontend/features/auth/models/user_group_model.dart'; 
 import 'package:lifematch_frontend/features/team_management/services/team_management_service.dart';
 
 import '../../group/models/group_model.dart';
+import '../../group/screens/group_detail_screen.dart';
 import '../../group/services/group_service.dart';
-import '../../team_management/screens/team_management_screen.dart'; // ⭐️ 서비스 import
+import '../../team_management/screens/team_management_screen.dart';
+
 
 // ------------------------------------------------------------------
 // ⭐️ MyGroupManageScreen (메인 소모임 관리 화면)
@@ -92,8 +94,27 @@ class _MyGroupManageScreenState extends State<MyGroupManageScreen> with SingleTi
     }
   }
 
-  // ⭐️ 소모임 상세 화면으로 이동하는 함수
+  // ⭐️ [신규] 참여 소모임 상세 화면으로 이동 (GroupDetailScreen)
+  void _navigateToGroupDetail(UserGroup group) {
+    print("➡️ 참여 소모임: GroupDetailScreen으로 이동 (ID: ${group.id}, ButtonType: none)");
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GroupDetailScreen(
+          groupId: group.id,
+          buttonType: GroupDetailButtonType.none, // GroupDetailButtonType 임포트 필요
+        ),
+      ),
+    ).then((_) {
+      _fetchMyGroupLists();
+    });
+  }
+
+  // ⭐️ [수정] 관리 소모임 상세 화면으로 이동 (TeamManagementScreen)
   void _navigateToTeamDetail(UserGroup group) async {
+    print("➡️ 관리 소모임: TeamManagementScreen으로 이동 (ID: ${group.id}, 상세 정보 로딩 시작)");
+
     // 로딩 상태를 표시하는 동안 사용자 입력을 막는 것이 좋습니다.
     showDialog(
       context: context,
@@ -102,11 +123,11 @@ class _MyGroupManageScreenState extends State<MyGroupManageScreen> with SingleTi
     );
 
     try {
-      // 1. GroupService를 사용하여 상세 GroupModel을 가져옵니다. (GET /api/group/{group_id})
+      // 1. GroupService를 사용하여 상세 GroupModel을 가져옵니다.
       final GroupModel detailModel = await _groupDetailService.getGroupDetail(group.id);
 
       // 로딩 다이얼로그 닫기
-      Navigator.pop(context);
+      if (mounted) Navigator.pop(context);
 
       // 2. TeamManagementScreen으로 상세 GroupModel을 initialGroupDetail로 전달합니다.
       await Navigator.push(
@@ -206,14 +227,18 @@ class _MyGroupManageScreenState extends State<MyGroupManageScreen> with SingleTi
     );
   }
 
-  // ⭐️ 그룹 목록의 개별 항목 위젯
+  // ⭐️ 그룹 목록의 개별 항목 위젯 (onTap 로직 수정)
   Widget _buildGroupTile(UserGroup group, bool isManagement) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12.0),
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        onTap: () => _navigateToTeamDetail(group),
+        // ⭐️ [수정] isManagement에 따라 이동할 함수 분리
+        onTap: () => isManagement
+            ? _navigateToTeamDetail(group) // 관리 소모임: TeamManagementScreen
+            : _navigateToGroupDetail(group), // 참여 소모임: GroupDetailScreen
+
         leading: Container(
           width: 50,
           height: 50,
