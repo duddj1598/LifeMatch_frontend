@@ -43,7 +43,8 @@ class AuthService {
           'user_nickname': nickname,
           'user_password': encryptedPassword, // ⭐️ 해싱된 비밀번호 전송
 
-          // ... (나머지 필드 유지) ...
+          'user_security_question': securityQuestion,
+          'user_security_answer': securityAnswer,
           'user_lifestyle_vector': [],
           'user_joined_groups_id': null,
           'user_owned_groups_id': null,

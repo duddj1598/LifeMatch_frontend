@@ -10,7 +10,9 @@ class GroupModel {
   final String leaderId;
   final int currentMember;
   final String leaderNickname;
+  final List<String> members;
 
+  bool get hasLeaderLoginId => leaderId != null && leaderId!.isNotEmpty;
   // 🔥 GroupDetailResponse 스키마에 있는 필드 (만약 상세 조회 API가 GroupDetailResponse를 쓴다면 필요)
   // 현재 라우터는 GroupRead를 반환하므로, 필요하다면 API 응답을 GroupRead로 단순화하거나,
   // 그룹 서비스에서 추가 정보를 합쳐서 보내도록 백엔드를 수정해야 합니다.
@@ -25,25 +27,31 @@ class GroupModel {
     this.groupImage,
     this.createdAt,
     this.chatId,
-    required this.currentMember, // Firestore 문서에서 읽어옴
+    required this.currentMember,
     required this.leaderId,
     required this.leaderNickname,
+    required this.members, // ⭐️ [추가] 생성자에 members 필드 추가
   });
 
   factory GroupModel.fromJson(Map<String, dynamic> json, String id) {
     final int parsedCurrentMember = (json['current_member'] as num?)?.toInt() ?? 0;
+
+    // ⭐️ [추가] JSON에서 members 리스트를 파싱
+    final List<String> parsedMembers = List<String>.from(json['members'] ?? []);
+
     return GroupModel(
-      id: id, // ⭐️ 두 번째 인자 id를 사용
+      id: id,
       groupName: json['group_name'] ?? '이름 없음',
       description: json['description'],
       category: json['category'],
-      maxMember: (json['max_member'] as num?)?.toInt() ?? 10, // 타입 안정성을 위해 num? 캐스팅 추가
+      maxMember: (json['max_member'] as num?)?.toInt() ?? 10,
       groupImage: json['group_image'],
       createdAt: json['created_at'],
       chatId: json['chat_id'],
       currentMember: parsedCurrentMember,
       leaderId: json['leader_id'] ?? '',
       leaderNickname: json['leader_nickname'] ?? '',
+      members: parsedMembers, // ⭐️ [추가] 파싱된 members 리스트 사용
     );
   }
 }

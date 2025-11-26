@@ -63,7 +63,7 @@ class GroupService {
     }
   }
 
-  Future<GroupDetail> createGroup({
+  Future<GroupModel> createGroup({
     required String groupName,
     required String description,
     required String category,
@@ -73,9 +73,11 @@ class GroupService {
   }) async {
     try {
       final String? accessToken = await _storageService.getToken();
+      final String? myId = await _storageService.getUserId(); // 내 ID (Leader ID) 가정을 위해 추가
+      final String? myNickname = await _storageService.getNickname(); // 내 닉네임 가정을 위해 추가
 
-      if (accessToken == null) {
-        throw Exception("로그인 토큰이 없습니다. 다시 로그인 해주세요.");
+      if (accessToken == null || myId == null || myNickname == null) {
+        throw Exception("사용자 정보(토큰, ID, 닉네임)가 부족합니다. 다시 로그인 해주세요.");
       }
 
       final Map<String, dynamic> data = {
@@ -101,22 +103,34 @@ class GroupService {
       if (response.statusCode == 201) {
         final Map<String, dynamic> jsonResponse = response.data;
 
-        // 서버 응답과 입력 받은 인자를 조합하여 GroupDetail 객체 생성
-        final GroupDetail newGroupDetail = GroupDetail(
-          groupId: jsonResponse['id'] ?? jsonResponse['group_id'] ?? '',
-          groupName: jsonResponse['group_name'] ?? groupName, // 응답 없으면 입력값 사용
-          groupTopic: category, // ⭐️ 인자로 받은 'category'를 'groupTopic'에 할당
-          groupDescription: jsonResponse['description'] ?? description, // 응답 없으면 입력값 사용
-          currentCapacity: jsonResponse['current_member'] ?? 1,
-          maxCapacity: jsonResponse['max_member'] ?? capacity, // 응답 없으면 입력값 사용
-          members: (jsonResponse['members'] as List<dynamic>?)?.map((id) => id.toString()).toList() ?? [],
-        );
+        // GroupModel의 ID는 백엔드 응답에서 'id' 또는 'group_id'로 받아야 합니다.
+        final String newGroupId = jsonResponse['id'] ?? jsonResponse['group_id'] ?? '';
 
-        if (newGroupDetail.groupId.isEmpty) {
+        if (newGroupId.isEmpty) {
           throw Exception("소모임은 생성되었으나, 서버 응답에 그룹 ID가 없습니다.");
         }
 
-        return newGroupDetail;
+        // ⭐️ [수정] GroupModel 객체 생성
+        final GroupModel newGroup = GroupModel(
+          id: newGroupId, // Firestore 문서 ID
+          groupName: jsonResponse['group_name'] ?? groupName,
+          category: category,
+          description: jsonResponse['description'] ?? description,
+
+          // ⭐️ 필수 필드: 서버 응답 또는 기본값/로컬 정보를 사용
+          currentMember: jsonResponse['current_member'] ?? 1, // 생성자는 멤버 1명
+          maxMember: jsonResponse['max_member'] ?? capacity,
+          leaderId: myId, // 로컬에 저장된 사용자 ID를 리더 ID로 가정
+          leaderNickname: myNickname, // 로컬에 저장된 닉네임을 리더 닉네임으로 가정
+          members: [myNickname], // 생성자 본인만 포함
+
+          // Nullable 필드
+          groupImage: jsonResponse['group_image'] ?? imageUrl,
+          createdAt: jsonResponse['created_at'],
+          chatId: jsonResponse['chat_id'],
+        );
+
+        return newGroup;
       } else {
         throw Exception("소모임 생성 실패: Status Code ${response.statusCode}");
       }

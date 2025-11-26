@@ -18,6 +18,7 @@ class _ChatScreenState extends State<ChatScreen>
   bool _hasError = false;
 
   List<dynamic> _groupChats = [];
+  List<dynamic> _dmChats = [];
 
   @override
   void initState() {
@@ -36,18 +37,28 @@ class _ChatScreenState extends State<ChatScreen>
     });
 
     try {
-      final data = await _chatService.getChatRooms();
+      final List rooms = await _chatService.getChatRooms(); // ⭐️ List<dynamic>으로 타입 명시
 
-      print("🔥 서버 응답 데이터: $data");
+      print("🔥 서버 응답 데이터: $rooms");
 
-      // FastAPI → {"status":200, "list":[{...}]}
-      final List rooms = data;
+      List<dynamic> groups = [];
+      List<dynamic> dms = [];
 
-      // 그룹 채팅만 존재하므로 그대로 저장
+      // ⭐️ [수정] type 필드를 기준으로 그룹 채팅과 DM 채팅 분리
+      for (var room in rooms) {
+        if (room["type"] == "group") {
+          groups.add(room);
+        } else if (room["type"] == "dm") {
+          dms.add(room);
+        }
+      }
+
       setState(() {
-        _groupChats = rooms;
+        _groupChats = groups;
+        _dmChats = dms; // ⭐️ DM 채팅 목록 저장
         _isLoading = false;
       });
+
     } catch (e) {
       debugPrint("채팅 목록 오류: $e");
       setState(() {
@@ -158,8 +169,8 @@ class _ChatScreenState extends State<ChatScreen>
     return TabBarView(
       controller: _tabController,
       children: [
-        _buildChatList(_groupChats),
-        _buildEmpty(), // 개인채팅 없음
+        _buildChatList(_groupChats, type: "group"), // ⭐️ type 인자 추가
+        _buildChatList(_dmChats, type: "dm"), // ⭐️ [수정] DM 채팅 목록 연결
       ],
     );
   }
@@ -167,7 +178,7 @@ class _ChatScreenState extends State<ChatScreen>
   // ------------------------------------------------------------
   // 그룹 채팅 리스트 UI
   // ------------------------------------------------------------
-  Widget _buildChatList(List chats) {
+  Widget _buildChatList(List chats, {required String type}) { // ⭐️ type 인자 받도록 수정
     if (chats.isEmpty) return _buildEmpty();
 
     return ListView.separated(
@@ -177,18 +188,44 @@ class _ChatScreenState extends State<ChatScreen>
       itemBuilder: (context, index) {
         final room = chats[index];
 
+        // ⭐️ [수정] 채팅방 타입에 따라 제목, 메시지, 아이콘, 라우팅 경로 변경
+        String title = room["name"] ?? "제목 없음";
+        String message;
+        IconData icon;
+        String route;
+
+        if (type == "group") {
+          title = room["name"] ?? room["group_name"] ?? "그룹 제목 없음";
+          message = room["category"] ?? "그룹 채팅";
+          icon = Icons.group_rounded;
+          route = '/chat-group-detail';
+        } else { // DM
+          // DM에서는 name 필드에 상대방 닉네임이 들어있음 (chat_service.py 참고)
+          message = "1:1 대화";
+          icon = Icons.person_rounded;
+          route = '/chat-personal-detail';
+        }
+
         return _buildChatCard(
-          title: room["group_name"] ?? "제목 없음",
-          message: room["category"] ?? "",
-          time: "",
-          unread: "0",
-          icon: Icons.group_rounded,
+          title: title,
+          message: message,
+          time: "", // 시간 정보가 없으므로 공백
+          unread: "0", // 안 읽은 메시지 수 정보가 없으므로 0
+          icon: icon,
           onTap: () {
+            // ⭐️ [수정] DM/그룹 타입에 따라 라우팅 경로 변경 및 arguments 전달
             Navigator.pushNamed(
               context,
-              '/chat-group-detail',
-              arguments: {"chatId": room["chat_id"]},
-            );
+              route,
+              arguments: {
+                "chatId": room["chat_id"],
+                "roomName": title, // 채팅방 상세 화면에 이름 전달
+                // "myUserDocId": "...", // 필요하면 여기서 전달 (로그인 서비스 필요)
+              },
+            ).then((_) {
+              // 채팅방에서 돌아왔을 때 목록 새로고침 (새 메시지 반영)
+              _loadChatRooms();
+            });
           },
         );
       },

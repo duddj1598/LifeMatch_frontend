@@ -3,6 +3,9 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:lifematch_frontend/features/team_management/screens/team_management_screen.dart';
 
+// ⭐️ [추가/수정] GroupModel 정의 파일을 import 해야 합니다.
+import 'package:lifematch_frontend/features/group/models/group_model.dart'; // GroupModel 경로 가정
+
 // 🔹 팀원 데이터 모델
 class TeamMember {
   final String userId;
@@ -18,9 +21,12 @@ class TeamMember {
   });
 }
 
+// ------------------------------------------------------------------
+// ⭐️ [수정] MemberInviteScreen (GroupModel 사용)
+// ------------------------------------------------------------------
 class MemberInviteScreen extends StatefulWidget {
   final String groupId;
-  final GroupDetail? initialGroupDetail;
+  final GroupModel? initialGroupDetail; // ⭐️ [수정] GroupDetail -> GroupModel
   final String selectedCategory;
 
   const MemberInviteScreen({
@@ -46,13 +52,13 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
     super.dispose();
   }
 
-  // 🔹 8글자 넘으면 ... 처리하는 함수
+  // 🔹 8글자 넘으면 ... 처리하는 함수 (유지)
   String shorten(String text, {int maxLength = 8}) {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + "...";
   }
 
-  // 🔥 패널 검색 API 연동
+  // 🔥 패널 검색 API 연동 (유지)
   Future<void> _searchPanelMembers(String query) async {
     if (query.trim().isEmpty) return;
 
@@ -93,7 +99,7 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
     }
   }
 
-  // 🔥 초대 API 호출 함수
+  // 🔥 초대 API 호출 함수 (유지)
   Future<bool> _sendInvite(String targetUserId) async {
     const url = "http://10.0.2.2:8000/api/group-action/invite"; // ⭐️ API 엔드포인트
 
@@ -130,7 +136,7 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
     }
   }
 
-  // 🔹 검색창 디자인
+  // 🔹 검색창 디자인 (유지)
   InputDecoration _buildInputDecoration(String hintText, {Widget? prefixIcon}) {
     return InputDecoration(
       hintText: hintText,
@@ -176,7 +182,7 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
           children: [
             const SizedBox(height: 18),
 
-            // 🔍 검색 바
+            // 🔍 검색 바 (유지)
             TextField(
               controller: _searchController,
               decoration: _buildInputDecoration(
@@ -193,7 +199,7 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                '[소모임 이름]에 어울리는 팀원이에요!',
+                '[소모임 이름]에 어울리는 팀원이에요!', // ⭐️ 소모임 이름 표시를 위해 widget.initialGroupDetail?.groupName 등을 사용할 수 있음
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
@@ -203,7 +209,7 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
             ),
             const SizedBox(height: 16),
 
-            // 🔹 검색 결과 리스트
+            // 🔹 검색 결과 리스트 (유지)
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
@@ -212,10 +218,8 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
                 ),
                 child: ListView.builder(
                   padding: const EdgeInsets.all(8.0),
-                  // ⭐️ 수정: 더보기 버튼이 없으므로, suggestedMembers의 길이만큼만 빌드
                   itemCount: _suggestedMembers.length,
                   itemBuilder: (context, index) {
-                    // ⭐️ 수정: 바로 팀원 카드를 빌드
                     return _buildTeamMemberCard(_suggestedMembers[index]);
                   },
                 ),
@@ -247,12 +251,13 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
                     onPressed: () {
                       print("완료 버튼 입력");
 
+                      // ⭐️ [수정] TeamManagementScreen으로 이동 시 GroupModel 전달
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => TeamManagementScreen(
                             groupId: widget.groupId,
-                            initialGroupDetail: widget.initialGroupDetail,
+                            initialGroupDetail: widget.initialGroupDetail, // ⭐️ GroupModel 타입 유지
                           ),
                         ),
                       );
@@ -277,9 +282,7 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
     );
   }
 
-  // ⭐️ 제거: _buildProfileMoreButton 함수 전체 제거
-
-  // ✔ 팀원 카드 UI
+  // ✔ 팀원 카드 UI (유지)
   Widget _buildTeamMemberCard(TeamMember member) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -331,8 +334,8 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
           ElevatedButton(
             onPressed: member.isInvited
                 ? null
-                : () async { // ⭐️ async로 변경
-              final success = await _sendInvite(member.userId); // ⭐️ API 호출
+                : () async {
+              final success = await _sendInvite(member.userId);
 
               if (success) {
                 setState(() => member.isInvited = true);

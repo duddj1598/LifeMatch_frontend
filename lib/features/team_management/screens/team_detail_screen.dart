@@ -3,16 +3,15 @@ import 'package:lifematch_frontend/features/group/screens/group_detail_screen.da
 import 'package:lifematch_frontend/features/team_management/screens/team_management_screen.dart';
 import 'package:lifematch_frontend/features/team_management/widgets/custom_bottom_nav_bar.dart';
 import 'package:lifematch_frontend/features/group/services/group_service.dart';
+import 'package:lifematch_frontend/features/group/models/group_model.dart';
 import 'memberInvite_screen.dart';
 
 class TeamDetailScreen extends StatefulWidget {
-  // ⭐️ 1. 홈 화면에서 카테고리 이름을 받을 변수 추가
   final String selectedCategory;
 
-  // ⭐️ 2. 생성자 수정: 'selectedCategory'를 받도록 변경
   const TeamDetailScreen({
     super.key,
-    required this.selectedCategory, // ⭐️ required 추가
+    required this.selectedCategory,
   });
 
   @override
@@ -22,7 +21,6 @@ class TeamDetailScreen extends StatefulWidget {
 
 class _TeamDetailScreenState extends State<TeamDetailScreen> {
   bool isCreateSelected = true;
-  // GroupService는 GroupDetail을 반환하도록 수정되어야 합니다.
   final GroupService _groupService = GroupService();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
@@ -38,7 +36,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     super.dispose();
   }
 
-  // ⭐️ [수정] _groupList에 groupId 필드 추가
+  // ⭐️ 그룹 목록 Mock 데이터
   final List<Map<String, String>> _groupList = [
     {"groupId": "join-id-a", "title": "[소모임 이름 A]", "topic": "투자ㆍ소비습관"},
     {"groupId": "join-id-b", "title": "[소모임 이름 B]", "topic": "투자ㆍ소비습관"},
@@ -51,9 +49,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     {"groupId": "join-id-i", "title": "[소모임 이름 I]", "topic": "코딩 스터디"},
   ];
 
-
-
-  // ⭐️ 1. "더보기"를 위한 카운터 변수 추가
   int _groupCounter = 1;
 
   void _handleBottomTap(String tag) {
@@ -76,66 +71,11 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F7),
-      appBar: AppBar(
-        // ... (기존 AppBar)
-        title: const Text(
-          "",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
-      // ⭐️ 기존 SingleChildScrollView 레이아웃 유지
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // ... (제목, 탭 버튼)
-            Text(
-              widget.selectedCategory,
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF6B7AA1),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildSelectButton("소모임 개설", true),
-                const SizedBox(width: 10),
-                _buildSelectButton("소모임 참여", false),
-              ],
-            ),
-            const SizedBox(height: 16),
+  // =================================================================
+  // ⭐️ 1. BUILD WIDGETS (생략된 위젯 코드)
+  // =================================================================
 
-            // 탭에 따라 UI 변경
-            if(isCreateSelected)
-              _buildCreateForm(context) // ⭐️ context 전달
-            else
-              _buildJoinList(context) // ⭐️ context 전달
-
-          ],
-        ),
-      ),
-      bottomNavigationBar:
-      CustomBottomNavBar(onTabSelected: _handleBottomTap),
-    );
-  }
-
-  // --- "소모임 개설" 폼 (수정) ---
-  // ⭐️ context 인자 추가
+  // --- "소모임 개설" 폼 ---
   Widget _buildCreateForm(BuildContext context) {
     return Column(
       children: [
@@ -157,7 +97,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ... (대표 사진 설정) ...
+              // 대표 사진 설정
               const Text(
                 "대표 사진 설정",
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
@@ -190,22 +130,21 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
               ),
               const SizedBox(height: 20),
 
-              // ... (입력 필드들) ...
+              // 입력 필드들
               _buildTextField("소모임 이름", "2~10자 내외로 설정 해 주세요", controller: _nameController),
               _buildTextField("소모임 설명", "30자 이내로 작성 해 주세요", controller: _descController),
               _buildTextField("소모임 모임 장소", "30자 이내로 작성 해 주세요", controller: _locationController),
-              _buildTextField("소모임 인원 수", "2~10자 내외로 설정 해 주세요", controller: _capacityController), // 인원수는 숫자만 받도록 가정
+              _buildTextField("소모임 인원 수", "2~10자 내외로 설정 해 주세요", controller: _capacityController, isNumber: true),
             ],
           ),
         ),
         const SizedBox(height: 24),
-        // ... (다음 버튼) ...
+        // 다음 버튼
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            // ⭐️ 4. API 호출 및 다음 화면 이동 로직
             onPressed: () async {
-              await _createGroupAndNavigate(context); // ⭐️ 새 함수 호출
+              await _createGroupAndNavigate(context);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF9AA8DA),
@@ -224,8 +163,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
-  // --- "소모임 참여" 목록 (수정) ---
-  // ⭐️ context 인자 추가
+  // --- "소모임 참여" 목록 ---
   Widget _buildJoinList(BuildContext context) {
     return Column(
       children: [
@@ -233,26 +171,22 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         _buildSearchBar(),
         const SizedBox(height: 20),
 
-        // 소모임 목록 (ListView.builder로 변경)
+        // 소모임 목록
         ListView.builder(
-          // ⭐️ SingleChildScrollView 내부에 있으므로 스크롤 충돌 방지
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-
-          padding: EdgeInsets.zero, // 바깥 Column이 패딩을 관리
-          itemCount: _groupList.length + 1, // ⭐️ 목록 + 더보기 버튼
+          padding: EdgeInsets.zero,
+          itemCount: _groupList.length + 1,
           itemBuilder: (context, index) {
             if (index == _groupList.length) {
-              // ⭐️ 마지막 항목은 "더보기" 버튼
               return _buildGroupMoreButton();
             } else {
-              // ⭐️ 목록 아이템
               final group = _groupList[index];
               return _buildGroupListItem(
-                context, // ⭐️ context 전달
+                context,
                 group['title']!,
                 group['topic']!,
-                group['groupId']!, // ⭐️ groupId 전달
+                group['groupId']!,
               );
             }
           },
@@ -261,7 +195,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
-  // 🔹 검색창 위젯 (기존과 동일)
+  // 🔹 검색창 위젯
   Widget _buildSearchBar() {
     return Container(
       decoration: BoxDecoration(
@@ -294,8 +228,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   }
 
 
-// 🔹 소모임 목록 아이템 위젯 (수정)
-  // ⭐️ context 인자 및 groupId 인자 추가
+// 🔹 소모임 목록 아이템 위젯
   Widget _buildGroupListItem(BuildContext context, String title, String topic, String groupId) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -315,7 +248,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       ),
       child: Row(
         children: [
-          // ... (대표 사진)
+          // 대표 사진
           Container(
             width: 60,
             height: 60,
@@ -331,7 +264,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           ),
           const SizedBox(width: 12),
 
-          // ... (소모임 정보)
+          // 소모임 정보
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,17 +284,16 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           ),
           const SizedBox(width: 12),
 
-          // ⭐️ 세부정보 버튼
+          // 세부정보 버튼
           ElevatedButton(
             onPressed: () {
-              // ⭐️ GroupDetailScreen으로 이동 시 groupId 전달
               print("페이지 이동! (세부정보: $title) - GroupDetailScreen으로 이동 (ID: $groupId)");
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => GroupDetailScreen(
                     buttonType: GroupDetailButtonType.joinOrInquire,
-                    groupId: groupId, // ⭐️ groupId 전달
+                    groupId: groupId,
                   ),
                 ),
               );
@@ -381,42 +313,41 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
-  // ⭐️ 4. "더보기" 버튼 위젯 및 로직 추가 (groupId 추가 반영)
+  // ⭐️ "더보기" 버튼 위젯 및 로직
   Widget _buildGroupMoreButton() {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextButton(
         onPressed: () {
-          // --- 5개 추가 로직 ---
+          // 5개 추가 로직
           setState(() {
-            List<Map<String, String>> newGroups = []; // 1. 5개를 담을 빈 리스트
-            for (int i = 0; i < 5; i++) { // 2. 5번 반복
+            List<Map<String, String>> newGroups = [];
+            for (int i = 0; i < 5; i++) {
               newGroups.add(
                   {
-                    "groupId": "new-join-id-$_groupCounter", // ⭐️ groupId 필드 추가
-                    "title": "새 소모임 $_groupCounter", // 3. 카운터로 고유 이름
+                    "groupId": "new-join-id-$_groupCounter",
+                    "title": "새 소모임 $_groupCounter",
                     "topic": "추가 주제"
                   }
               );
-              _groupCounter++; // 4. 카운터 1 증가
+              _groupCounter++;
             }
-            _groupList.addAll(newGroups); // 5. 5개 한꺼번에 추가
+            _groupList.addAll(newGroups);
           });
-          // --- 로직 끝 ---
         },
         child: const Text(
           '소모임 더보기',
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF4C6DAF), // MemberInvite와 색상 통일
+            color: Color(0xFF4C6DAF),
           ),
         ),
       ),
     );
   }
 
-  // 🔹 재사용 가능한 텍스트필드 위젯 (기존과 동일)
+  // 🔹 재사용 가능한 텍스트필드 위젯
   Widget _buildTextField(String label, String hint, {TextEditingController? controller, bool isNumber = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -428,8 +359,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
               const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
           TextField(
-            controller: controller, // ⭐️ 컨트롤러 연결
-            keyboardType: isNumber ? TextInputType.number : TextInputType.text, // ⭐️ 숫자 입력 타입 설정
+            controller: controller,
+            keyboardType: isNumber ? TextInputType.number : TextInputType.text,
             decoration: InputDecoration(
               hintText: hint,
               filled: true,
@@ -446,7 +377,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       ),
     );
   }
-  // 🔹 소모임 개설/참여 버튼 (기존과 동일)
+
+  // 🔹 소모임 개설/참여 버튼
   Widget _buildSelectButton(String text, bool isCreate) {
     final isSelected = (isCreateSelected == isCreate);
     return Expanded(
@@ -494,29 +426,23 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
-  // ⭐️⭐️⭐️ [핵심 수정] _createGroupAndNavigate 함수
+  // ⭐️ API 호출 및 다음 화면 이동 함수
   Future<void> _createGroupAndNavigate(BuildContext context) async {
-    // 5-1. 입력값 검증 (간소화)
     final name = _nameController.text;
     final desc = _descController.text;
     final location = _locationController.text;
     final capacity = int.tryParse(_capacityController.text) ?? 0;
-    final category = widget.selectedCategory; // 홈 화면에서 받은 카테고리 사용
+    final category = widget.selectedCategory;
 
     if (name.isEmpty || desc.isEmpty || location.isEmpty || capacity < 2) {
-      // 에러 처리: snackbar 등을 띄워야 함
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('모든 필드를 올바르게 입력해주세요.')),
+        const SnackBar(content: Text('모든 필드를 올바르게 입력해주세요 (인원수 최소 2명).')),
       );
       return;
     }
 
     try {
-      // 로딩 인디케이터 표시 (옵션)
-      // showLoading(context);
-
-      // ⭐️ 1. await 호출을 완료하고, GroupDetail 객체를 받습니다.
-      final GroupDetail newGroupDetail = await _groupService.createGroup(
+      final GroupModel newGroupModel = await _groupService.createGroup(
         groupName: name,
         description: desc,
         category: category,
@@ -524,30 +450,83 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         location: location,
       );
 
-      // ⭐️ 2. API 호출 성공 후의 순차적 코드를 아래에 배치합니다. (이전 오류 해결)
-      print('✅ 소모임 생성 성공! Group ID: ${newGroupDetail.groupId}');
+      print('✅ 소모임 생성 성공! Group ID: ${newGroupModel.id}');
 
-      // MemberInviteScreen으로 이동 (시나리오 4번)
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => MemberInviteScreen(
-            groupId: newGroupDetail.groupId,
-            initialGroupDetail: newGroupDetail,
+            groupId: newGroupModel.id,
+            initialGroupDetail: newGroupModel,
             selectedCategory: widget.selectedCategory,
           ),
         ),
       );
 
     } catch (e) {
-      // 5-4. API 호출 실패
       print('❌ 소모임 생성 실패: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('소모임 생성 실패: ${e.toString()}')),
       );
-    } finally {
-      // 로딩 인디케이터 숨김 (옵션)
-      // hideLoading(context);
     }
+  }
+
+  // =================================================================
+  // ⭐️ 2. BUILD METHOD (최종 반환 위젯)
+  // =================================================================
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F7F7),
+      appBar: AppBar(
+        title: const Text(
+          "",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              widget.selectedCategory,
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF6B7AA1),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildSelectButton("소모임 개설", true),
+                const SizedBox(width: 10),
+                _buildSelectButton("소모임 참여", false),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // 탭에 따라 UI 변경
+            if(isCreateSelected)
+              _buildCreateForm(context)
+            else
+              _buildJoinList(context)
+
+          ],
+        ),
+      ),
+      bottomNavigationBar:
+      CustomBottomNavBar(onTabSelected: _handleBottomTap),
+    );
   }
 }

@@ -11,7 +11,6 @@ import 'features/auth/screens/find_pw_screen.dart';
 import 'features/lifestyle_test/screens/lifestyle_test_screen.dart';
 import 'features/home/screens/home_screen.dart';
 import 'features/connection/screens/my_group_manage_screen.dart';
-import 'features/group/screens/group_detail_screen.dart';
 import 'package:lifematch_frontend/features/chat/screens/chat_screen.dart';
 import 'package:lifematch_frontend/features/chat/screens/chat_group_detail_screen.dart';
 import 'package:lifematch_frontend/features/chat/screens/chat_personal_detail_screen.dart';
@@ -20,7 +19,6 @@ import 'package:lifematch_frontend/features/profile/screens/edit_profile_screen.
 
 //테스트 임포트
 import 'features/notification/screens/notification_screen.dart';
-import 'features/team_management/screens/team_detail_screen.dart';
 
 void main() {
   runApp(
