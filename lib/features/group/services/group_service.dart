@@ -197,4 +197,73 @@ class GroupService {
       throw Exception('알 수 없는 오류 발생: $e');
     }
   }
+
+  ///[추가] 그룹 정보 수정 API 연결 (PATCH /api/group/{group_id})
+
+  Future<void> updateGroupDetails({
+    required String groupId,
+    String? groupName,
+    String? category,
+    String? description,
+    // 필요하다면 String? groupImage 등 추가
+  }) async {
+    try {
+      final String? accessToken = await _storageService.getToken();
+
+      if (accessToken == null) {
+        throw Exception("사용자 인증 정보가 부족합니다. 다시 로그인 해주세요.");
+      }
+
+      final Map<String, dynamic> headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $accessToken',
+      };
+
+      // 1. 변경할 필드만 Map에 담습니다. (null 필드는 제외)
+      final Map<String, dynamic> data = {};
+      if (groupName != null) data['group_name'] = groupName;
+      if (category != null) data['category'] = category;
+      if (description != null) data['description'] = description;
+
+      if (data.isEmpty) {
+        print("업데이트할 내용이 없습니다. API 호출을 건너뜁니다.");
+        return;
+      }
+
+      // 2. Dio PATCH 요청
+      final response = await dio.patch(
+        '/api/group/$groupId',
+        data: data, // ⭐️ 변경할 데이터만 포함된 Map 전송
+        options: Options(
+          headers: headers,
+        ),
+      );
+
+      // 백엔드에서 200 OK를 반환하도록 설정했으므로, 200만 확인합니다.
+      if (response.statusCode == 200) {
+        print("✅ Group ID $groupId 정보 업데이트 성공");
+        // 성공 시 별도의 반환 값 없이 종료
+        return;
+      } else {
+        // 200 이외의 상태 코드 처리 (일반적으로 백엔드 라우터에서 HTTPException으로 처리됨)
+        throw Exception("그룹 정보 수정 실패: Status Code ${response.statusCode}");
+      }
+    } on DioException catch (e) {
+      // 백엔드에서 403, 404, 500을 명확히 던지므로 이를 처리합니다.
+      final detail = e.response?.data['detail'] ?? '네트워크 또는 서버 오류 발생';
+      final statusCode = e.response?.statusCode;
+
+      if (statusCode == 403) {
+        throw Exception("수정 권한이 없습니다. (리더만 수정 가능)");
+      } else if (statusCode == 404) {
+        throw Exception("요청하신 그룹 ID($groupId)를 찾을 수 없습니다.");
+      }
+
+      print("❌ [Group API ERROR] Status $statusCode, Detail: $detail");
+      throw Exception('그룹 정보 수정 실패: $detail');
+
+    } catch (e) {
+      throw Exception('알 수 없는 오류 발생: $e');
+    }
+  }
 }
