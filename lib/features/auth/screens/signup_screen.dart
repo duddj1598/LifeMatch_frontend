@@ -519,21 +519,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
               prefixIcon: const Icon(Icons.person_outline),
               errorText: _idError,
             ),
-            onChanged: (_) => setState(() => _idError = null),
+            onChanged: (_) => setState(() {
+              _idError = null;
+              // ⭐️ [추가] 텍스트가 변경되면 확인 플래그 초기화
+              if (_isIdChecked) _isIdChecked = false;
+            }),
           ),
         ),
         const SizedBox(width: 8),
         ElevatedButton(
           onPressed: _checkIdAvailability,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFB0BEC5),
+            backgroundColor:
+            _isIdChecked ? Colors.green : const Color(0xFFB0BEC5),
             foregroundColor: Colors.black,
             elevation: 0,
             shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           ),
-          child: const Text("확인"),
+          child: Text(_isIdChecked ? "완료" : "확인"),
         ),
       ],
     );

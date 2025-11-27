@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 
 // ⭐️ Android 에뮬레이터: http://10.0.2.2:8000
 // ⭐️ iOS 시뮬레이터: http://localhost:8000
-const String baseUrl = "http://10.0.2.2:8000";
+const String baseUrl = "https://ironical-unphilanthropically-lashon.ngrok-free.dev";
 
 final dio = Dio(
   BaseOptions(
