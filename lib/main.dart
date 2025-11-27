@@ -1,6 +1,5 @@
 //패키지 임포트
 import 'package:flutter/material.dart';
-import 'package:lifematch_frontend/features/team_management/screens/memberInvite_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:lifematch_frontend/features/auth/viewmodels/auth_viewmodel.dart';
 //화면 임포트
@@ -60,20 +59,21 @@ class MyApp extends StatelessWidget {
         '/chat-personal-detail': (context) => const ChatPersonalDetailScreen(),
         '/my-profile': (context) => const MyProfileScreen(),
         '/edit-profile': (context) => const EditProfileScreen(),
-        '/invite': (context) {
-          // ⭐️ [수정] settings.arguments에서 실제 groupId를 추출합니다.
-          final groupId = ModalRoute.of(context)!.settings.arguments as String;
+      //   '/invite': (context) {
+      //     // ⭐️ [수정] settings.arguments에서 실제 groupId를 추출합니다.
+      //     final groupId = ModalRoute.of(context)!.settings.arguments as String;
+      //
+      //     // ⭐️ [수정] 추출한 groupId를 MemberInviteScreen에 전달합니다.
+      //     //          나머지 필드는 필요하다면 해당 라우트에서 처리하거나,
+      //     //          MemberInviteScreen의 생성자에 맞게 기본값/널 값을 지정합니다.
+      //     return MemberInviteScreen(
+      //       groupId: groupId, // ✅ 실제 그룹 ID 전달
+      //       initialGroupDetail: null, // 기존대로 유지
+      //       selectedCategory: "category", // 기존대로 유지
+      //     );
+      //   },
 
-          // ⭐️ [수정] 추출한 groupId를 MemberInviteScreen에 전달합니다.
-          //          나머지 필드는 필요하다면 해당 라우트에서 처리하거나,
-          //          MemberInviteScreen의 생성자에 맞게 기본값/널 값을 지정합니다.
-          return MemberInviteScreen(
-            groupId: groupId, // ✅ 실제 그룹 ID 전달
-            initialGroupDetail: null, // 기존대로 유지
-            selectedCategory: "category", // 기존대로 유지
-          );
-        },
-      },
+       },
     );
   }
 }

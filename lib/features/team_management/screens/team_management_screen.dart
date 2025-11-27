@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lifematch_frontend/features/team_management/widgets/custom_bottom_nav_bar.dart';
 import 'package:lifematch_frontend/features/group/models/group_model.dart';
 
+import 'memberInvite_screen.dart';
+
 // ------------------------------------------------------------------
 // ⭐️ [유지] Mock Group Service (GroupModel 필드명 반영)
 // ------------------------------------------------------------------
@@ -15,9 +17,7 @@ class MockGroupService {
       throw Exception("groupId가 유효하지 않습니다. 상세 정보를 불러올 수 없습니다.");
     }
 
-    // groupId에 따라 다른 데이터를 반환한다고 가정
     if (groupId.startsWith('invite-')) {
-      // ⭐️ GroupModel 생성자를 사용하여 반환
       return GroupModel(
         id: groupId, // Firestore 문서 ID
         groupName: "초대받은 맛집탐방 모임",
@@ -35,9 +35,20 @@ class MockGroupService {
         chatId: "chat-123",
       );
     }
-
-    // 요청된 그룹 ID에 대한 Mock 데이터가 없는 경우 예외 발생
-    throw Exception("그룹 ID [$groupId]에 대한 상세 Mock 데이터가 없습니다.");
+    return GroupModel(
+      id: groupId,
+      groupName: "기존 소모임 ($groupId)",
+      category: "일반 활동",
+      description: "기존에 생성된 소모임의 상세 정보입니다.",
+      currentMember: 5,
+      maxMember: 10,
+      members: ["리더(나)", "팀원1", "팀원2", "팀원3", "팀원4"],
+      leaderId: "my-id",
+      leaderNickname: "리더(나)", // 리더 표시 테스트용
+      groupImage: "https://via.placeholder.com/150", // 이미지 테스트용
+      createdAt: DateTime.now().toIso8601String(),
+      chatId: "chat-general",
+    );
   }
 }
 // ------------------------------------------------------------------
@@ -171,7 +182,7 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
 
   void _onCompletePressed() {
     print("✅ 소모임 설정 완료 버튼 클릭, MyGroupManageScreen으로 이동");
-    Navigator.of(context).popUntil(ModalRoute.withName('/my-group-manage'));
+    Navigator.pushReplacementNamed(context, '/my-group-manage');
   }
 
   @override
@@ -198,10 +209,9 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          onPressed: () =>
+              Navigator.pushReplacementNamed(context, '/home'),
         ),
         title: const Text(''),
       ),
@@ -531,7 +541,6 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
                 ),
               ),
               Text(
-                // ⭐️ GroupModel의 필드명 currentMember, maxMember 사용
                 "${_groupDetail!.currentMember}/${_groupDetail!.maxMember}",
                 style: TextStyle(
                   fontSize: 15,
@@ -540,7 +549,6 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
               ),
             ],
           ),
-
 
           const SizedBox(height: 10),
           Divider(color: Colors.grey[300], thickness: 1),
@@ -552,12 +560,22 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
             icon: Icons.person_add_alt_1_outlined,
             isInvite: true,
             onTap: () {
-              print("팀원 초대 클릭 - /invite로 이동 (Group ID: ${widget.groupId})");
-              Navigator.pushNamed(context, '/invite', arguments: widget.groupId);
+              print("팀원 초대 클릭 - GroupDetail 모델 전달");
+
+              // ⭐️ [수정완료] newGroupModel은 이 화면에 없습니다.
+              // 현재 화면에 로드된 _groupDetail을 그대로 넘겨줍니다.
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MemberInviteScreen(
+                    groupDetail: _groupDetail!, // ⭐️ 현재 화면의 모델 전달
+                  ),
+                ),
+              );
             },
           ),
 
-          // ⭐️ GroupModel의 members 리스트 사용
+          // 팀원 리스트 표시
           ..._groupDetail!.members.map((member) => _buildMemberRow(context, memberName: member)).toList(),
         ],
       ),
