@@ -18,6 +18,7 @@ import 'package:lifematch_frontend/features/profile/screens/edit_profile_screen.
 
 //테스트 임포트
 import 'features/notification/screens/notification_screen.dart';
+import 'features/splash/screens/splash_screen.dart';
 
 void main() {
   runApp(
@@ -38,8 +39,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.blue),
 
       // ✅ 앱이 시작할 때 바로 이동할 첫 화면
-      initialRoute: '/login',
-
+      home: const SplashScreen(),
 
       // ✅ 네비게이션 라우트 등록
       routes: {
@@ -60,6 +60,7 @@ class MyApp extends StatelessWidget {
         '/my-profile': (context) => const MyProfileScreen(),
         '/edit-profile': (context) => const EditProfileScreen(),
        },
+
     );
   }
 }
