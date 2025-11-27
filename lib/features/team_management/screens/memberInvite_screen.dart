@@ -21,15 +21,12 @@ class TeamMember {
 }
 
 class MemberInviteScreen extends StatefulWidget {
-  final String groupId;
-  final GroupModel? initialGroupDetail; // ⭐️ [수정] GroupDetail -> GroupModel
-  final String selectedCategory;
+  // ⭐️ [수정] 오직 GroupModel 하나만 받습니다.
+  final GroupModel groupDetail;
 
   const MemberInviteScreen({
     super.key,
-    required this.groupId,
-    this.initialGroupDetail,
-    required this.selectedCategory,
+    required this.groupDetail, // 필수값
   });
 
   @override
@@ -59,23 +56,18 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
   void _performSearch() {
     final query = _searchController.text.trim();
 
-    // 키보드 숨기기 (UX 개선)
-    //FocusScope.of(context).unfocus();
-
-    // 이전 검색과 동일하면 API 호출 방지
     if (query == _currentQuery) {
       return;
     }
 
     setState(() {
-      _currentQuery = query; // 현재 쿼리 업데이트
+      _currentQuery = query;
     });
 
-    // API 호출 실행
     _searchPanelMembers(query);
   }
 
-  // 🔥 패널 검색 API 연동 (유지)
+  // 🔥 패널 검색 API 연동
   Future<void> _searchPanelMembers(String query) async {
     if (!mounted) return;
 
@@ -98,13 +90,14 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "query": query,
-          "category": widget.selectedCategory,
+          // ⭐️ [수정] widget.selectedCategory 대신 모델에서 꺼내 사용
+          // category가 null일 경우를 대비해 기본값 처리
+          "category": widget.groupDetail.category ?? "",
         }),
       );
 
       if (response.statusCode == 200) {
         final res = jsonDecode(response.body);
-
         final List<dynamic> idList = res["id"] ?? [];
 
         if (!mounted) return;
@@ -114,7 +107,6 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
             idList.map((panelId) {
               return TeamMember(
                 userId: panelId as String,
-                // userId가 패널 ID라면 닉네임은 실제 닉네임으로 교체해야 함
                 nickname: shorten("$panelId"),
                 interest: "관심사 정보 없음",
               );
@@ -143,9 +135,9 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
     }
   }
 
-  // 🔥 초대 API 호출 함수 (유지)
+  // 🔥 초대 API 호출 함수
   Future<bool> _sendInvite(String targetUserId) async {
-    const url = "http://10.0.2.2:8000/api/group-action/invite"; // ⭐️ API 엔드포인트
+    const url = "http://10.0.2.2:8000/api/group-action/invite";
     final String? accessToken = await _storageService.getToken();
 
     if (accessToken == null || accessToken.isEmpty) {
@@ -158,9 +150,13 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
     try {
       final response = await http.post(
         Uri.parse(url),
-        headers: {"Content-Type": "application/json","Authorization": "Bearer $accessToken",},
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $accessToken",
+        },
         body: jsonEncode({
-          "group_id": widget.groupId,// 현재 화면의 그룹 ID
+          // ⭐️ [수정] widget.groupId 대신 모델의 ID 사용
+          "group_id": widget.groupDetail.id,
           "user_id": targetUserId
         }),
       );
@@ -173,7 +169,6 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
         final errorBody = jsonDecode(response.body);
         final detail = errorBody['detail'] ?? "초대 요청 처리 실패";
         print("❌ 초대 API 오류: $detail");
-        // 사용자에게 실패 메시지 표시
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("초대 실패: $detail")),
         );
@@ -234,19 +229,19 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
           children: [
             const SizedBox(height: 18),
 
-            // 🔍 검색 바 (유지)
+            // 🔍 검색 바
             TextField(
               controller: _searchController,
               decoration: _buildInputDecoration(
                 '원하는 팀원을 검색해보세요!',
                 prefixIcon: IconButton(
                   icon: const Icon(Icons.search, color: Color(0xFF4C6DAF)),
-                  onPressed: _performSearch, // ⭐️ 돋보기 아이콘 클릭 시 검색 실행
+                  onPressed: _performSearch,
                 ),
               ),
               onSubmitted: (value) {
-              _performSearch();
-            },
+                _performSearch();
+              },
             ),
 
             const SizedBox(height: 20),
@@ -254,7 +249,8 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                '${widget.initialGroupDetail?.groupName}에 어울리는 팀원이에요!', // ⭐️ 소모임 이름 표시를 위해 widget.initialGroupDetail?.groupName 등을 사용할 수 있음
+                // ⭐️ [수정] 모델 내부의 groupName 사용
+                '${widget.groupDetail.groupName}에 어울리는 팀원이에요!',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
@@ -264,7 +260,7 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
             ),
             const SizedBox(height: 16),
 
-            // 🔹 검색 결과 리스트 (유지)
+            // 🔹 검색 결과 리스트
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
@@ -306,16 +302,16 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
                     onPressed: () {
                       print("완료 버튼 입력");
 
-                      // ⭐️ [수정] TeamManagementScreen으로 이동 시 GroupModel 전달
+                      // ⭐️ [수정] TeamManagementScreen으로 이동 시 GroupModel 전체 전달
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                           builder: (context) => TeamManagementScreen(
-                            groupId: widget.groupId,
+                            // 모델에서 ID 추출
+                            groupId: widget.groupDetail.id,
 
-                            // ⭐️ [점검] 이 initialGroupDetail에 유효한 값이 들어오고 있는지 확인이 필요합니다.
-                            //        (만약 이 값이 null이라면 TeamManagementScreen은 여전히 오류가 날 수 있음)
-                            initialGroupDetail: widget.initialGroupDetail,
+                            // 모델 자체를 초기값으로 전달 (서버 재호출 방지)
+                            initialGroupDetail: widget.groupDetail,
                           ),
                         ),
                       );

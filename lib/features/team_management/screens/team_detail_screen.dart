@@ -582,9 +582,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         context,
         MaterialPageRoute(
           builder: (context) => MemberInviteScreen(
-            groupId: newGroupModel.id,
-            initialGroupDetail: newGroupModel,
-            selectedCategory: widget.selectedCategory,
+            // ⭐️ [수정] 복잡한 매개변수 다 없애고, 방금 만든 모델 하나만 전달!
+            groupDetail: newGroupModel,
           ),
         ),
       );
