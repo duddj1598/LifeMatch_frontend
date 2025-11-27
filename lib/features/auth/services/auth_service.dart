@@ -92,7 +92,7 @@ class AuthService {
       final response = await dio.post(
         '/api/auth/find-id',
         data: {
-          'user_nickname': nickname,                    // ⭐ 기존 email → nickname
+          'nickname': nickname,                    // ⭐ 기존 email → nickname
           'security_question': securityQuestion,
           'security_answer': securityAnswer,
         },
