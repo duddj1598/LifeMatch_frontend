@@ -84,7 +84,7 @@ class AuthService {
 
   // --- 아이디 찾기 ---
   Future<String> findUserId({
-    required String email,
+    required String nickname,
     required String securityQuestion,
     required String securityAnswer,
   }) async {
@@ -92,7 +92,7 @@ class AuthService {
       final response = await dio.post(
         '/api/auth/find-id',
         data: {
-          'user_email': email,
+          'user_nickname': nickname,                    // ⭐ 기존 email → nickname
           'security_question': securityQuestion,
           'security_answer': securityAnswer,
         },
@@ -107,7 +107,6 @@ class AuthService {
   // --- 비밀번호 재설정 함수 (해싱 적용) ---
   Future<bool> resetPassword({
     required String loginId,
-    required String email,
     required String securityQuestion,
     required String securityAnswer,
     required String newPassword, // ⭐️ 평문 비밀번호 받음
@@ -120,7 +119,6 @@ class AuthService {
         '/api/auth/reset-password',
         data: {
           'login_id': loginId,
-          'user_email': email,
           'security_question': securityQuestion,
           'security_answer': securityAnswer,
           'new_password': encryptedNewPassword, // ⭐️ 해싱된 비밀번호 전송

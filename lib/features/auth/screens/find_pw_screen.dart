@@ -13,7 +13,6 @@ class FindPwScreen extends StatefulWidget {
 
 class _FindPwScreenState extends State<FindPwScreen> {
   final _idController = TextEditingController();
-  final _emailController = TextEditingController();
   final _answerController = TextEditingController();
   final _customQuestionController = TextEditingController();
   final _newPwController = TextEditingController();
@@ -27,7 +26,6 @@ class _FindPwScreenState extends State<FindPwScreen> {
   @override
   void dispose() {
     _idController.dispose();
-    _emailController.dispose();
     _answerController.dispose();
     _customQuestionController.dispose();
     _newPwController.dispose();
@@ -82,18 +80,7 @@ class _FindPwScreenState extends State<FindPwScreen> {
             ),
             const SizedBox(height: 15),
 
-            // 이메일 입력
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: '이메일 주소',
-                hintText: '이메일 주소를 입력해주세요',
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(borderSide: BorderSide.none),
-              ),
-            ),
-            const SizedBox(height: 15),
+
 
             // 본인 확인 질문
             const Text(
@@ -205,7 +192,6 @@ class _FindPwScreenState extends State<FindPwScreen> {
                   try {
                     final success = await _authService.resetPassword(
                       loginId: _idController.text.trim(),
-                      email: _emailController.text.trim(),
                       securityQuestion: question,
                       securityAnswer: _answerController.text.trim(),
                       newPassword: _newPwController.text.trim(),
