@@ -307,12 +307,15 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
                       print("완료 버튼 입력");
 
                       // ⭐️ [수정] TeamManagementScreen으로 이동 시 GroupModel 전달
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                           builder: (context) => TeamManagementScreen(
                             groupId: widget.groupId,
-                            initialGroupDetail: widget.initialGroupDetail, // ⭐️ GroupModel 타입 유지
+
+                            // ⭐️ [점검] 이 initialGroupDetail에 유효한 값이 들어오고 있는지 확인이 필요합니다.
+                            //        (만약 이 값이 null이라면 TeamManagementScreen은 여전히 오류가 날 수 있음)
+                            initialGroupDetail: widget.initialGroupDetail,
                           ),
                         ),
                       );

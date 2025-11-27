@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:lifematch_frontend/features/auth/viewmodels/auth_viewmodel.dart';
 import 'package:lifematch_frontend/core/constants/security_questions.dart';
@@ -29,6 +32,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String? _nicknameError;
   String? _emailError;
 
+  bool _isIdChecked = false;
   bool _isNicknameChecked = false;
   bool _isEmailChecked = false;
   bool _agreeToTerms = false;
@@ -71,60 +75,195 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
   }
 
+
   // --------------------------------------------------
-  // ⭐ 닉네임 중복 확인 (현재는 로컬 시뮬레이션)
+// ⭐ 아이디 중복 확인 API 연동
+// --------------------------------------------------
+  Future<void> _checkIdAvailability() async {
+    final id = _idController.text.trim();
+
+    if (id.isEmpty) {
+      setState(() => _idError = "아이디를 입력해주세요.");
+      return;
+    }
+
+    // ⭐️ 백엔드 URL과 엔드포인트
+    final url = Uri.parse("http://10.0.2.2:8000/api/auth/check/id?user_id=$id");
+
+    setState(() {
+      _idError = null; // 요청 전에 에러 초기화
+      // _isLoading = true; // 필요하다면 로딩 상태 추가 가능 (현재는 생략)
+    });
+
+    try {
+      final response = await http.get(url);
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        // 200 OK: 사용 가능
+        setState(() {
+          _idError = null;
+          _isIdChecked = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("사용 가능한 아이디입니다."), backgroundColor: Colors.green),
+        );
+      } else if (response.statusCode == 409) {
+        // 409 Conflict: 중복
+        final errorBody = jsonDecode(utf8.decode(response.bodyBytes));
+        final detail = errorBody['detail'] ?? "이미 사용 중인 아이디입니다.";
+        setState(() {
+          _idError = detail;
+          _isIdChecked = false;
+        });
+      } else {
+        // 기타 오류 처리 (예: 422 Validation Error)
+        setState(() {
+          _idError = "확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+        });
+        print("❌ 아이디 확인 API 오류: ${response.statusCode}, ${response.body}");
+      }
+
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _idError = "네트워크 오류가 발생했습니다.";
+      });
+      print("❌ 네트워크 오류: $e");
+    }
+    // finally {
+    //   if (mounted) setState(() => _isLoading = false);
+    // }
+  }
+
   // --------------------------------------------------
+// ⭐ 닉네임 중복 확인 API 연동
+// --------------------------------------------------
   Future<void> _checkNicknameAvailability() async {
     final nickname = _nicknameController.text.trim();
 
     if (nickname.isEmpty) {
-      setState(() => _nicknameError = "닉네임을 입력해주세요.");
+      setState(() {
+        _nicknameError = "닉네임을 입력해주세요.";
+        _isNicknameChecked = false; // 플래그 초기화
+      });
       return;
     }
 
-    if (nickname == "admin") {
+    // ⭐️ 백엔드 URL과 엔드포인트
+    final url = Uri.parse("http://10.0.2.2:8000/api/auth/check/nickname?nickname=$nickname");
+
+    setState(() {
+      _nicknameError = null; // 요청 전에 에러 초기화
+      // _isLoading = true; // 필요하다면 로딩 상태 추가 가능
+    });
+
+    try {
+      final response = await http.get(url);
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        // 200 OK: 사용 가능
+        setState(() {
+          _nicknameError = null;
+          _isNicknameChecked = true; // ⭐️ 성공 시 플래그 True
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("사용 가능한 닉네임입니다."), backgroundColor: Colors.green),
+        );
+      } else if (response.statusCode == 409) {
+        // 409 Conflict: 중복
+        final errorBody = jsonDecode(utf8.decode(response.bodyBytes));
+        final detail = errorBody['detail'] ?? "이미 사용 중인 닉네임입니다.";
+        setState(() {
+          _nicknameError = detail;
+          _isNicknameChecked = false; // ⭐️ 실패 시 플래그 False
+        });
+      } else {
+        // 기타 오류 처리 (예: 422 Validation Error)
+        setState(() {
+          _nicknameError = "확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+          _isNicknameChecked = false;
+        });
+        print("❌ 닉네임 확인 API 오류: ${response.statusCode}, ${response.body}");
+      }
+    } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _nicknameError = "이미 사용 중인 닉네임입니다.";
+        _nicknameError = "네트워크 오류가 발생했습니다.";
         _isNicknameChecked = false;
       });
-    } else {
-      setState(() {
-        _nicknameError = null;
-        _isNicknameChecked = true;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("사용 가능한 닉네임입니다."), backgroundColor: Colors.green),
-      );
+      print("❌ 네트워크 오류: $e");
     }
+    // finally {
+    //   if (mounted) setState(() => _isLoading = false);
+    // }
   }
 
   // --------------------------------------------------
-  // ⭐ 이메일 중복 확인 (현재는 로컬 시뮬레이션)
-  // --------------------------------------------------
+// ⭐ 이메일 중복 확인 API 연동
+// --------------------------------------------------
   Future<void> _checkEmailAvailability() async {
     if (_emailIdController.text.isEmpty ||
         _emailDomainController.text.isEmpty) {
       setState(() {
         _emailError = "이메일을 모두 입력해주세요.";
+        _isEmailChecked = false;
       });
       return;
     }
 
-    final email = "${_emailIdController.text}@${_emailDomainController.text}";
+    final email = "${_emailIdController.text.trim()}@${_emailDomainController.text.trim()}";
 
-    if (email == "test@test.com") {
+    // ⭐️ 백엔드 URL과 엔드포인트
+    // URL 인코딩을 사용하여 '@' 및 기타 특수 문자가 안전하게 전달되도록 합니다.
+    final encodedEmail = Uri.encodeComponent(email);
+    final url = Uri.parse("http://10.0.2.2:8000/api/auth/check/email?email=$encodedEmail");
+
+    setState(() {
+      _emailError = null; // 요청 전에 에러 초기화
+    });
+
+    try {
+      final response = await http.get(url);
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        // 200 OK: 사용 가능
+        setState(() {
+          _emailError = null;
+          _isEmailChecked = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("사용 가능한 이메일입니다."), backgroundColor: Colors.green),
+        );
+      } else if (response.statusCode == 409) {
+        // 409 Conflict: 중복
+        final errorBody = jsonDecode(utf8.decode(response.bodyBytes));
+        // 백엔드가 상세 메시지를 제공한다면 사용, 아니면 기본 메시지 사용
+        final detail = errorBody['detail'] ?? "이미 사용 중인 이메일입니다.";
+        setState(() {
+          _emailError = detail;
+          _isEmailChecked = false;
+        });
+      } else {
+        // 기타 오류 처리 (예: 422 Validation Error)
+        setState(() {
+          _emailError = "확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+          _isEmailChecked = false;
+        });
+        print("❌ 이메일 확인 API 오류: ${response.statusCode}, ${response.body}");
+      }
+    } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _emailError = "이미 사용 중인 이메일입니다.";
+        _emailError = "네트워크 오류가 발생했습니다.";
         _isEmailChecked = false;
       });
-    } else {
-      setState(() {
-        _emailError = null;
-        _isEmailChecked = true;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("사용 가능한 이메일입니다."), backgroundColor: Colors.green),
-      );
+      print("❌ 네트워크 오류: $e");
     }
   }
 
@@ -137,6 +276,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (viewModel.isLoading) return;
 
     // 필수 유효성 검사
+    if (_idError != null || !_isIdChecked) { // ⭐️ [수정] 아이디 검사
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("아이디 중복 확인을 완료해주세요.")),
+      );
+      return;
+    }
     if (_passwordController.text != _confirmPasswordController.text) {
       setState(() => _confirmPasswordError = "비밀번호가 일치하지 않습니다.");
       return;
@@ -340,25 +485,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
               prefixIcon: const Icon(Icons.person_outline),
               errorText: _idError,
             ),
+            onChanged: (_) => setState(() => _idError = null),
           ),
         ),
         const SizedBox(width: 8),
         ElevatedButton(
-          onPressed: () {
-            final id = _idController.text.trim();
-            setState(() {
-              if (id.isEmpty) {
-                _idError = "아이디를 입력해주세요.";
-              } else if (id == "admin") {
-                _idError = "이미 사용 중입니다.";
-              } else {
-                _idError = null;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("사용 가능한 아이디입니다."), backgroundColor: Colors.green),
-                );
-              }
-            });
-          },
+          onPressed: _checkIdAvailability,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFB0BEC5),
             foregroundColor: Colors.black,
@@ -426,13 +558,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
               prefixIcon: const Icon(Icons.badge_outlined),
               errorText: _nicknameError,
             ),
+            // ⭐️ [수정] 닉네임 수정 시 확인 플래그 및 에러 초기화
             onChanged: (_) => setState(() {
+              _nicknameError = null;
               if (_isNicknameChecked) _isNicknameChecked = false;
             }),
           ),
         ),
         const SizedBox(width: 8),
         ElevatedButton(
+          // ⭐️ [수정] _checkNicknameAvailability 함수 호출
           onPressed: _checkNicknameAvailability,
           style: ElevatedButton.styleFrom(
             backgroundColor:
@@ -463,7 +598,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   prefixIcon: const Icon(Icons.email_outlined),
                 ),
                 onChanged: (_) {
-                  if (_isEmailChecked) setState(() => _isEmailChecked = false);
+                  // ⭐️ [수정] 이메일 ID 수정 시 확인 플래그 및 에러 초기화
+                  setState(() {
+                    _emailError = null;
+                    if (_isEmailChecked) _isEmailChecked = false;
+                  });
                 },
               ),
             ),
@@ -477,12 +616,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 controller: _emailDomainController,
                 decoration: _buildInputDecoration("도메인"),
                 onChanged: (_) {
-                  if (_isEmailChecked) setState(() => _isEmailChecked = false);
+                  // ⭐️ [수정] 이메일 도메인 수정 시 확인 플래그 및 에러 초기화
+                  setState(() {
+                    _emailError = null;
+                    if (_isEmailChecked) _isEmailChecked = false;
+                  });
                 },
               ),
             ),
             const SizedBox(width: 8),
             ElevatedButton(
+              // ⭐️ [수정] _checkEmailAvailability 함수 호출
               onPressed: _checkEmailAvailability,
               style: ElevatedButton.styleFrom(
                 backgroundColor:
