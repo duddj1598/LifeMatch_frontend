@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lifematch_frontend/features/chat/services/chat_service.dart';
+import '../widgets/chat_bubble.dart'; // ChatBubble 위젯 임포트
+import 'dart:async';
 
 class ChatGroupDetailScreen extends StatefulWidget {
   const ChatGroupDetailScreen({super.key});
@@ -11,53 +13,96 @@ class ChatGroupDetailScreen extends StatefulWidget {
 class _ChatGroupDetailScreenState extends State<ChatGroupDetailScreen> {
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-
   final ChatService _chatService = ChatService();
 
+  Timer? _pollingTimer;
   List<dynamic> messages = [];
-  int? nextMessageId;
-
   bool _isLoading = true;
   bool _hasError = false;
 
   late String chatId;
   late String roomName;
+  late String myUserDocId; // ⭐️ 내 ID 변수 추가
+
+  // ⭐️ 중복 갱신 방지를 위한 마지막 메시지 ID
+  int _lastMessageId = -1;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    // 🔥 ChatScreen에서 전달된 arguments 가져오기
     final args = ModalRoute.of(context)!.settings.arguments as Map;
     chatId = args["chatId"];
     roomName = args["roomName"] ?? "";
+    myUserDocId = args["myUserDocId"] ?? ""; // ⭐️ 내 ID 받아오기
 
     _loadMessages();
+    _startPolling(); // 폴링 시작
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel(); // 타이머 해제
+    _inputController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   // -------------------------------------------------------
-  // 🔥 API: 채팅 내역 불러오기
+  // 🔄 폴링 로직 (3초 주기)
   // -------------------------------------------------------
-  Future<void> _loadMessages() async {
-    try {
-      final Map<String, dynamic> data =
-      await _chatService.getChatMessages(chatId);
+  void _startPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      _loadMessages(isPolling: true);
+    });
+  }
 
-      print("🔥 서버 채팅 내역 응답: $data");
-
+  // -------------------------------------------------------
+  // 🔥 API: 채팅 내역 불러오기 (최적화 적용)
+  // -------------------------------------------------------
+  Future<void> _loadMessages({bool isPolling = false}) async {
+    if (!isPolling) {
       setState(() {
-        messages = data["messages"] ?? [];
-        nextMessageId = data["next_message_id"];
-        _isLoading = false;
+        _isLoading = true;
+        _hasError = false;
       });
+    }
 
-      _scrollToBottom();
+    try {
+      final Map<String, dynamic> data = await _chatService.getChatMessages(chatId);
+
+      // 백엔드에서 날짜순(오래된 것 -> 최신)으로 온다고 가정
+      final List<dynamic> loadedMessages = data["messages"] ?? [];
+
+      // ⭐️ [최적화] 데이터가 있고, 마지막 메시지가 변하지 않았다면 리턴 (화면 갱신 X)
+      if (loadedMessages.isNotEmpty) {
+        final newLastId = loadedMessages.last['message_id'];
+
+        if (messages.length == loadedMessages.length && _lastMessageId == newLastId) {
+          return;
+        }
+
+        if (mounted) {
+          setState(() {
+            messages = loadedMessages;
+            _lastMessageId = newLastId;
+          });
+
+          // 폴링 중이 아니거나, 최신 메시지가 내가 보낸 것일 때만 스크롤 내림
+          if (!isPolling || (loadedMessages.last['user_id'] == myUserDocId)) {
+            _scrollToBottom();
+          }
+        }
+      }
+
+      if (!isPolling) {
+        setState(() => _isLoading = false);
+      }
+
     } catch (e) {
       print("채팅 내역 불러오기 오류: $e");
-      setState(() {
-        _isLoading = false;
-        _hasError = true;
-      });
+      if (!isPolling) setState(() => _isLoading = false);
     }
   }
 
@@ -70,12 +115,15 @@ class _ChatGroupDetailScreenState extends State<ChatGroupDetailScreen> {
     final text = _inputController.text.trim();
     _inputController.clear();
 
-    // UI에 먼저 표시
+    // 낙관적 업데이트 (UI에 먼저 표시)
+    final tempMessageId = DateTime.now().millisecondsSinceEpoch;
     setState(() {
       messages.add({
+        "message_id": tempMessageId,
         "content": text,
-        "isMine": true,
+        "user_id": myUserDocId, // 내 ID 사용
         "time": DateTime.now().toIso8601String(),
+        "is_mine": true,
       });
     });
 
@@ -83,17 +131,18 @@ class _ChatGroupDetailScreenState extends State<ChatGroupDetailScreen> {
 
     try {
       await _chatService.sendMessage(chatId, text);
+      // 전송 성공 시 즉시 데이터 갱신
+      _loadMessages(isPolling: true);
     } catch (e) {
       print("메시지 전송 오류: $e");
     }
   }
 
   void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 150), () {
+    Future.delayed(const Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
-        _scrollController.jumpTo(
-          _scrollController.position.maxScrollExtent + 80,
-        );
+        // 정방향 리스트이므로 maxScrollExtent가 맨 아래입니다.
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       }
     });
   }
@@ -152,6 +201,8 @@ class _ChatGroupDetailScreenState extends State<ChatGroupDetailScreen> {
           if (!_isLoading && !_hasError)
             Expanded(
               child: ListView.builder(
+                // ⭐️ 스크롤 상태 유지를 위한 Key
+                key: const PageStorageKey("group_chat_list"),
                 controller: _scrollController,
                 padding: const EdgeInsets.all(16),
                 itemCount: messages.length,
@@ -159,27 +210,15 @@ class _ChatGroupDetailScreenState extends State<ChatGroupDetailScreen> {
                   final msg = messages[index];
 
                   final String text = msg["content"] ?? "";
-                  final String time = msg["time"] ?? "";
-                  final bool isMine =
-                      msg["isMine"] ??
-                          (msg["user_id"] == "me"); // 백엔드 user_id 비교 가능
+                  // is_mine 체크 로직 통일
+                  final bool isMine = msg["is_mine"] ?? msg["isMine"] ?? (msg["user_id"] == myUserDocId);
 
                   return Align(
-                    alignment:
-                    isMine ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 6),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isMine
-                            ? const Color(0xFFD7E3FF)
-                            : Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Text(text),
+                    alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+                    // ⭐️ 개인 채팅과 동일하게 ChatBubble 위젯 사용
+                    child: ChatBubble(
+                      text: text,
+                      isMine: isMine,
                     ),
                   );
                 },
@@ -212,7 +251,9 @@ class _ChatGroupDetailScreenState extends State<ChatGroupDetailScreen> {
                   borderRadius: BorderRadius.circular(22),
                   borderSide: BorderSide.none,
                 ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               ),
+              onSubmitted: (_) => _sendMessage(),
             ),
           ),
           const SizedBox(width: 10),

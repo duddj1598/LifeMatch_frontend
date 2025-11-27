@@ -180,7 +180,6 @@ class _ChatPersonalDetailScreenState extends State<ChatPersonalDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
@@ -198,7 +197,6 @@ class _ChatPersonalDetailScreenState extends State<ChatPersonalDetailScreen> {
           ),
         ),
       ),
-
       body: Column(
         children: [
           if (_isLoading)
@@ -227,24 +225,29 @@ class _ChatPersonalDetailScreenState extends State<ChatPersonalDetailScreen> {
 
           if (!_isLoading && !_hasError)
             Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(16),
-                itemCount: messages.length,
-                itemBuilder: (context, index) {
-                  final msg = messages[index];
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: messages.length,
+                  key: const PageStorageKey("chat_list"),
+                  itemBuilder: (context, index) {
+                    final msg = messages[index];
 
-                  final String text = msg["content"] ?? "";
-                  final String sender = msg["user_id"] ?? "";
-                  final bool isMine =
-                      msg["isMine"] ?? (sender == myUserDocId);
+                    final String text = msg["content"] ?? "";
+                    // 백엔드에서 'is_mine'이라는 키로 boolean 값을 내려줍니다. (Python 코드 참조)
+                    // msg["isMine"]은 프론트에서 임시로 넣은 키일 수 있으니 둘 다 체크합니다.
+                    final bool isMine = msg["is_mine"] ?? msg["isMine"] ?? (msg["user_id"] == myUserDocId);
 
-                  return ChatBubble(
-                    text: text,
-                    isMine: isMine,
-                  );
-                },
-              ),
+                    // ⭐️ [핵심 수정] Align 위젯으로 감싸서 좌/우 정렬
+                    return Align(
+                      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+                      child: ChatBubble(
+                        text: text,
+                        isMine: isMine,
+                      ),
+                    );
+                  },
+                ),
             ),
 
           if (!_isLoading && !_hasError) _buildInputBox(),
