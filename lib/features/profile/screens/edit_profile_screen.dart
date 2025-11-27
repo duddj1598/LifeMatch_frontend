@@ -19,17 +19,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final TextEditingController _nicknameController = TextEditingController();
 
   String accessToken = "";
+  String _originalNickname = "";
 
   @override
   void initState() {
     super.initState();
-    _loadCreds();
+    _loadProfileData();
   }
 
-  Future<void> _loadCreds() async {
+  Future<void> _loadProfileData() async {
     accessToken = await _storage.getToken() ?? "";
 
     print("🟪 Loaded AccessToken = $accessToken");
+    final nickname = await _storage.getNickname();
+    if (nickname != null) {
+      _nicknameController.text = nickname;
+      _originalNickname = nickname;
+    }
   }
 
   // 이미지 선택
@@ -50,6 +56,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (accessToken.isEmpty) {
       print("❌ 저장 불가: accessToken 없음");
+      return;
+    }
+
+    final newNickname = _nicknameController.text.trim();
+    if (newNickname.isEmpty) {
+      print("❌ 저장 불가: 닉네임 필드가 비어있음");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("닉네임을 반드시 입력해주세요."), // 사용자에게 보여줄 메시지
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return; // 닉네임이 비어있으면 여기서 함수 종료
+    }
+
+    if (newNickname == _originalNickname) {
+      print("✅ 저장 불가: 닉네임이 기존 닉네임과 동일함. (변경사항 없음)");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("변경 사항이 없습니다."),
+          backgroundColor: Colors.blueGrey,
+        ),
+      );
+      // 변경 사항이 없으므로 API 호출 없이 창을 닫습니다.
+      Navigator.pop(context, false);
       return;
     }
 
