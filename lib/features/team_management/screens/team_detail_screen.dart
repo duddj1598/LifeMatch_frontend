@@ -433,45 +433,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
-  // ⭐️ "더보기" 버튼 위젯 및 로직 (API 로직으로 변경 필요)
-  Widget _buildGroupMoreButton() {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      child: TextButton(
-        onPressed: () {
-          // ⭐️ 실제 구현 시: API의 다음 페이지를 로드하는 로직으로 대체해야 합니다.
-          print("⚠️ 소모임 더보기 클릭: 다음 페이지 API 호출 로직 필요");
-
-          // Mock 데이터 추가 로직 (임시)
-          setState(() {
-            List<GroupModel> newGroups = [];
-            for (int i = 0; i < 3; i++) { // 3개만 추가하도록 수정
-              newGroups.add(GroupModel(
-                id: "new-join-id-$_groupCounter",
-                groupName: "추가 소모임 $_groupCounter",
-                category: widget.selectedCategory,
-                currentMember: 1, maxMember: 5,
-                leaderId: 'mock-leader', leaderNickname: '리더',
-                description: '추가된 Mock 그룹입니다.',
-                groupImage: null, createdAt: '2025-01-01T00:00:00Z', chatId: 'mock-chat-id',
-                members: ['멤버 1'],
-              ));
-              _groupCounter++;
-            }
-            _filteredGroupList.addAll(newGroups);
-          });
-        },
-        child: const Text(
-          '소모임 더보기',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF4C6DAF),
-          ),
-        ),
-      ),
-    );
-  }
 
   // 🔹 재사용 가능한 텍스트필드 위젯 (유지)
   Widget _buildTextField(String label, String hint, {TextEditingController? controller, bool isNumber = false}) {

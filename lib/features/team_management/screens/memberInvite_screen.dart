@@ -5,7 +5,6 @@ import 'package:lifematch_frontend/features/team_management/screens/team_managem
 import 'package:lifematch_frontend/features/group/models/group_model.dart';
 import 'package:lifematch_frontend/core/services/storage_service.dart';
 
-// 🔹 1. [수정] 팀원 데이터 모델: interest -> lifestyle 변경
 class TeamMember {
   final String userId;
   final String nickname;
