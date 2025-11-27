@@ -5,28 +5,27 @@ import 'package:lifematch_frontend/features/team_management/screens/team_managem
 import 'package:lifematch_frontend/features/group/models/group_model.dart';
 import 'package:lifematch_frontend/core/services/storage_service.dart';
 
-// 🔹 팀원 데이터 모델
+// 🔹 1. [수정] 팀원 데이터 모델: interest -> lifestyle 변경
 class TeamMember {
   final String userId;
   final String nickname;
-  final String interest;
+  final String lifestyle; // 라이프 스타일 필드
   bool isInvited;
 
   TeamMember({
     required this.userId,
     required this.nickname,
-    required this.interest,
+    required this.lifestyle,
     this.isInvited = false,
   });
 }
 
 class MemberInviteScreen extends StatefulWidget {
-  // ⭐️ [수정] 오직 GroupModel 하나만 받습니다.
   final GroupModel groupDetail;
 
   const MemberInviteScreen({
     super.key,
-    required this.groupDetail, // 필수값
+    required this.groupDetail,
   });
 
   @override
@@ -47,7 +46,6 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
     super.dispose();
   }
 
-  // 🔹 8글자 넘으면 ... 처리하는 함수 (유지)
   String shorten(String text, {int maxLength = 8}) {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + "...";
@@ -90,15 +88,22 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "query": query,
-          // ⭐️ [수정] widget.selectedCategory 대신 모델에서 꺼내 사용
-          // category가 null일 경우를 대비해 기본값 처리
           "category": widget.groupDetail.category ?? "",
         }),
       );
 
       if (response.statusCode == 200) {
         final res = jsonDecode(response.body);
+
+        // 🔹 2. [수정] 백엔드 응답 구조에 따라 데이터 매핑 수정
+        // 가정: 백엔드가 단순히 ID 리스트만 주는 경우 -> 라이프스타일 정보가 없으므로 "정보 없음" 처리
+        // 만약 백엔드가 객체 리스트([{id: "...", lifestyle: "..."}])를 준다면 코드를 바꿔야 합니다.
+        // 현재 코드 흐름상 idList만 오는 것으로 보입니다.
+
         final List<dynamic> idList = res["id"] ?? [];
+        // ⚠️ 주의: 백엔드에서 검색 결과에 라이프스타일 정보도 같이 보내줘야 정확히 표시 가능합니다.
+        // 현재는 API가 ID만 준다고 가정하고 작성되어 있습니다.
+        // 만약 API가 라이프스타일도 준다면 `res["data"]` 같은 곳에서 꺼내야 합니다.
 
         if (!mounted) return;
         setState(() {
@@ -108,7 +113,9 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
               return TeamMember(
                 userId: panelId as String,
                 nickname: shorten("$panelId"),
-                interest: "관심사 정보 없음",
+                // ⚠️ 현재 API 응답에 라이프스타일 데이터가 없다면 임시 텍스트가 나옵니다.
+                // 백엔드 API 응답에 lifestyle 필드가 있다면 `data["lifestyle"]` 처럼 매핑하세요.
+                lifestyle: "라이프스타일 정보 없음",
               );
             }),
           );
@@ -155,7 +162,6 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
           "Authorization": "Bearer $accessToken",
         },
         body: jsonEncode({
-          // ⭐️ [수정] widget.groupId 대신 모델의 ID 사용
           "group_id": widget.groupDetail.id,
           "user_id": targetUserId
         }),
@@ -183,7 +189,6 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
     }
   }
 
-  // 🔹 검색창 디자인 (유지)
   InputDecoration _buildInputDecoration(String hintText, {Widget? prefixIcon}) {
     return InputDecoration(
       hintText: hintText,
@@ -228,8 +233,6 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
         child: Column(
           children: [
             const SizedBox(height: 18),
-
-            // 🔍 검색 바
             TextField(
               controller: _searchController,
               decoration: _buildInputDecoration(
@@ -249,7 +252,6 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                // ⭐️ [수정] 모델 내부의 groupName 사용
                 '${widget.groupDetail.groupName}에 어울리는 팀원이에요!',
                 style: TextStyle(
                   fontSize: 15,
@@ -301,16 +303,11 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
                   child: ElevatedButton(
                     onPressed: () {
                       print("완료 버튼 입력");
-
-                      // ⭐️ [수정] TeamManagementScreen으로 이동 시 GroupModel 전체 전달
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                           builder: (context) => TeamManagementScreen(
-                            // 모델에서 ID 추출
                             groupId: widget.groupDetail.id,
-
-                            // 모델 자체를 초기값으로 전달 (서버 재호출 방지)
                             initialGroupDetail: widget.groupDetail,
                           ),
                         ),
@@ -336,7 +333,7 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
     );
   }
 
-  // ✔ 팀원 카드 UI (유지)
+  // ✔ 3. [수정] 팀원 카드 UI: 관심사 -> 라이프 스타일 표시
   Widget _buildTeamMemberCard(TeamMember member) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -379,8 +376,13 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text("관심사: ${member.interest}",
-                    style: const TextStyle(fontSize: 13, color: Colors.black54)),
+                // 🔹 여기가 UI 핵심 변경 부분
+                Text(
+                  "${member.lifestyle}",
+                  style: const TextStyle(fontSize: 13, color: Colors.black54),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),

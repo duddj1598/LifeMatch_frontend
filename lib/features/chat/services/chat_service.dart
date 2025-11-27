@@ -57,7 +57,7 @@ class ChatService {
         '/api/chat/$chatId/message',
         queryParameters: {
           if (messageId != null) "message_id": messageId,
-          "size": 20,
+          "size": 50,
         },
         options: Options(headers: headers),
       );
