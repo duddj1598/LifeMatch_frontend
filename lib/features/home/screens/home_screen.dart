@@ -37,6 +37,10 @@ class _HomeScreenState extends State<HomeScreen> {
       final prefs = await SharedPreferences.getInstance();
       final String? accessToken = await _storageService.getToken();
 
+      final String? myUserId = await _storageService.getUserId();
+
+
+
       if (accessToken == null) {
         print("⚠️ accessToken 없음 → 로그인 필요");
         setState(() => _isLoading = false);
@@ -45,11 +49,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
       final res = await _homeService.getHomeRecommendations(accessToken);
 
+      // print("========================================");
+      // print("내 아이디(myUserId): '$myUserId'"); // 따옴표('')로 감싸서 공백 확인
+      //
+      // for (var item in res.recommendedActivities) {
+      //   print("그룹: ${item.groupName}");
+      //   print(" - 리더 아이디(leaderId): '${item.leaderId}'");
+      //   print(" - 일치 여부: ${item.leaderId == myUserId}"); // 이게 false면 안 걸러짐
+      // }
+      // print("========================================");
+
       setState(() {
         _homeData = res;
         _isLoading = false;
+        _homeData = res;
       });
-
     } catch (e) {
       print("❌ 홈 데이터 로딩 실패: $e");
 

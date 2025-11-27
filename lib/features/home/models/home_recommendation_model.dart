@@ -21,11 +21,13 @@ class RecommendedActivity {
   final String groupId;
   final String groupName;
   final String category;
+  final String leaderId;
 
   RecommendedActivity({
     required this.groupId,
     required this.groupName,
     required this.category,
+    required this.leaderId,
   });
 
   factory RecommendedActivity.fromJson(Map<String, dynamic> json) {
@@ -33,6 +35,7 @@ class RecommendedActivity {
       groupId: json['group_id'],
       groupName: json['group_name'],
       category: json['category'],
+      leaderId: json['leader_id'] ?? '',
     );
   }
 }
