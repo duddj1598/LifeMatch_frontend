@@ -8,6 +8,10 @@ import 'package:lifematch_frontend/core/services/api_client.dart' as ApiClient; 
 import 'package:lifematch_frontend/features/team_management/screens/team_management_screen.dart';
 import 'package:lifematch_frontend/features/group/models/group_model.dart';
 import 'package:lifematch_frontend/core/services/storage_service.dart';
+import 'package:lifematch_frontend/features/lifestyle_test/screens/lifestyle_loading_screen.dart';
+import 'package:lifematch_frontend/core/services/storage_service.dart';
+
+import '../../chat/services/chat_service.dart';
 
 class TeamMember {
   final String userId;
@@ -38,6 +42,7 @@ class MemberInviteScreen extends StatefulWidget {
 class _MemberInviteScreenState extends State<MemberInviteScreen> {
   // ⭐️ Dio 인스턴스 사용
   final Dio dio = ApiClient.dio;
+  final ChatService _chatService = ChatService();
 
   final List<TeamMember> _suggestedMembers = [];
   final TextEditingController _searchController = TextEditingController();
@@ -45,6 +50,7 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
 
   String _currentQuery = "";
   bool _isLoading = false;
+  bool _initialSearchCompleted = false;
 
   // ⭐️ 검색된 전체 패널 수를 저장할 변수 추가
   int _totalSuggestedMembers = 0;
@@ -72,6 +78,79 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
     });
 
     _searchPanelMembers(query);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // 로드된 후 한 번만 _performSearch()를 호출
+
+    // 1. 검색 컨트롤러에 그룹 카테고리를 초기 검색어로 설정
+    _searchController.text = widget.groupDetail.category ?? '';
+
+    // 2. 초기 검색 시작 플래그 설정
+    _initialSearchCompleted = false;
+
+    // 3. 프레임이 그려진 후 검색을 실행
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _performSearch();
+    });
+
+  }
+
+  // --------------------------------------------------
+// 🔥 1:1 채팅방 ID 조회/생성 및 화면 이동
+// --------------------------------------------------
+  Future<void> _openChatWithMember(TeamMember targetMember) async {
+    final myUserId = await _storageService.getUserId();
+
+    if (myUserId == null || myUserId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("로그인 정보가 필요합니다. 다시 로그인해주세요.")),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("${targetMember.nickname}님과의 채팅방을 여는 중...")),
+    );
+
+    try {
+      // ⭐️ [수정] ChatService의 createChatRoom 함수 사용
+      final responseData = await _chatService.createChatRoom(
+        type: "dm",
+        groupId: null, // DM이므로 null
+        // ⭐️ 참가자 목록: 나의 ID와 상대방 ID
+        targetIds: [targetMember.userId],
+      );
+
+      final String chatId = responseData['chat_id'];
+
+      // 4. 성공 시 ChatPersonalDetailScreen으로 이동
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      Navigator.pushNamed(
+        context,
+        '/chat-personal-detail',
+        arguments: {
+          "chatId": chatId,
+          "roomName": targetMember.nickname,
+          "myUserDocId": myUserId,
+        },
+      );
+
+    } catch (e) {
+      // ⭐️ ChatService에서 던진 상세 오류 메시지를 사용
+      final errorMessage = e.toString().replaceFirst("Exception: ", "");
+      print("❌ 1:1 채팅방 오류: $errorMessage");
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("채팅방 연결 실패: $errorMessage")),
+      );
+    }
   }
 
   // 🔥 패널 검색 API 연동 (새 응답 구조 반영)
@@ -174,6 +253,10 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          if (!_initialSearchCompleted) {
+            _searchController.clear(); // 검색창 비우기
+            _initialSearchCompleted = true; // 플래그를 true로 설정하여 다음 검색부터는 비우지 않도록 함
+          }
         });
       }
     }
@@ -316,11 +399,23 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
                   border: Border.all(color: const Color(0xFF4C6DAF), width: 1.0),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(8.0),
-                  itemCount: _suggestedMembers.length,
-                  itemBuilder: (context, index) {
-                    return _buildTeamMemberCard(_suggestedMembers[index]);
+                child: _isLoading
+                  ? const Center(
+                  child: LoadingSpinner(size: 80.0),
+                )
+                    :_suggestedMembers.isEmpty && _currentQuery.isEmpty
+                  ? const Center(
+                  // ⭐️ 검색 전 초기 상태
+                  child: Text(
+                    "닉네임 또는 키워드를 검색하여 팀원을 찾아보세요.",
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(8.0),
+                    itemCount: _suggestedMembers.length,
+                    itemBuilder: (context, index) {
+                      return _buildTeamMemberCard(_suggestedMembers[index]);
                   },
                 ),
               ),
@@ -418,8 +513,15 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF4C6DAF))),
                     const SizedBox(width: 4),
-                    const Icon(Icons.chat_bubble_outline,
-                        size: 18, color: Color(0xFF4C6DAF)),
+                    // const Icon(Icons.chat_bubble_outline,
+                    //     size: 18, color: Color(0xFF4C6DAF)),
+                    GestureDetector(
+                      onTap: () => _openChatWithMember(member), // 👈 채팅방 열기 함수 호출
+                      child: const Icon(Icons.chat_bubble_outline,
+                          size: 18,
+                          color: Color(0xFF4C6DAF)
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 4),

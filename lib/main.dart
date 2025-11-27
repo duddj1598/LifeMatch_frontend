@@ -15,10 +15,9 @@ import 'package:lifematch_frontend/features/chat/screens/chat_group_detail_scree
 import 'package:lifematch_frontend/features/chat/screens/chat_personal_detail_screen.dart';
 import 'package:lifematch_frontend/features/profile/screens/my_profile_screen.dart';
 import 'package:lifematch_frontend/features/profile/screens/edit_profile_screen.dart';
-
-//테스트 임포트
 import 'features/notification/screens/notification_screen.dart';
 import 'features/splash/screens/splash_screen.dart';
+
 
 void main() {
   runApp(
