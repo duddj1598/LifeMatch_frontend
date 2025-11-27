@@ -1,97 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:lifematch_frontend/features/team_management/widgets/custom_bottom_nav_bar.dart';
+import 'package:lifematch_frontend/features/group/models/group_model.dart';
 
 // ------------------------------------------------------------------
-// ⭐️ [수정] Group Detail Data Model (TeamManagementScreen에 통합 정의)
-// ------------------------------------------------------------------
-
-class GroupDetail {
-  final String groupId;
-  String groupName;
-  String groupTopic;
-  String groupDescription;
-  int currentCapacity;
-  int maxCapacity;
-  List<String> members; // 멤버 닉네임 리스트를 가정
-
-  GroupDetail({
-    required this.groupId,
-    required this.groupName,
-    required this.groupTopic,
-    required this.groupDescription,
-    required this.currentCapacity,
-    required this.maxCapacity,
-    required this.members,
-  });
-
-  // 🔥 JSON 응답을 GroupDetail 객체로 변환하는 팩토리 생성자 추가
-  factory GroupDetail.fromJson(Map<String, dynamic> json) {
-    // API 응답 키: group_name, category, description, current_member, max_member, members
-    return GroupDetail(
-      // groupId는 응답에 없거나, GroupService.getGroupDetail의 흐름을 가정합니다.
-      // 여기서는 GroupService 호출 시 받은 ID를 사용해야 하지만, 안전을 위해 빈 문자열을 사용합니다.
-      // 실제 API 응답에 group_id가 있다면 json['group_id']를 사용합니다.
-      groupId: json['group_id'] ?? '',
-
-      groupName: json['group_name'] ?? '알 수 없는 그룹',
-
-      // groupTopic -> category 매핑
-      groupTopic: json['category'] ?? '주제 미정',
-
-      groupDescription: json['description'] ?? '',
-
-      // currentCapacity -> current_member 매핑
-      currentCapacity: (json['current_member'] as num?)?.toInt() ?? 0,
-
-      // maxCapacity -> max_member 매핑
-      maxCapacity: (json['max_member'] as num?)?.toInt() ?? 10,
-
-      // members 리스트 처리
-      members: List<String>.from(json['members'] ?? []),
-    );
-  }
-}
-
-// ------------------------------------------------------------------
-// ⭐️ [유지] Mock Group Service
+// ⭐️ [유지] Mock Group Service (GroupModel 필드명 반영)
 // ------------------------------------------------------------------
 class MockGroupService {
-  Future<GroupDetail> getGroupDetail(String groupId) async {
+  // ⭐️ [수정] 반환 타입을 GroupModel로 변경
+  Future<GroupModel> getGroupDetail(String groupId) async {
     print("API CALL: Group ID $groupId의 상세 정보 요청 (Mock)");
     await Future.delayed(const Duration(milliseconds: 700)); // 로딩 지연
 
+    if (groupId.isEmpty) {
+      throw Exception("groupId가 유효하지 않습니다. 상세 정보를 불러올 수 없습니다.");
+    }
+
     // groupId에 따라 다른 데이터를 반환한다고 가정
     if (groupId.startsWith('invite-')) {
-      return GroupDetail(
-        groupId: groupId,
+      // ⭐️ GroupModel 생성자를 사용하여 반환
+      return GroupModel(
+        id: groupId, // Firestore 문서 ID
         groupName: "초대받은 맛집탐방 모임",
-        groupTopic: "맛집 탐방",
-        groupDescription: "서울의 숨겨진 맛집을 같이 탐방하며 정보를 공유해요!",
-        currentCapacity: 3,
-        maxCapacity: 5,
+        category: "맛집 탐방",
+        description: "서울의 숨겨진 맛집을 같이 탐방하며 정보를 공유해요!",
+        currentMember: 3, // GroupModel 필드 사용
+        maxMember: 5, // GroupModel 필드 사용
         members: ["맛잘알(리더)", "미식가", "배고픈자"],
+
+        // GroupModel의 추가 필수 필드 (Mock 값 채워 넣기)
+        leaderId: "leader-1",
+        leaderNickname: "맛잘알",
+        groupImage: null,
+        createdAt: "2025-01-01T10:00:00Z",
+        chatId: "chat-123",
       );
     }
 
-    // TeamDetailScreen에서 생성된 그룹 (더미 데이터)
-    return GroupDetail(
-      groupId: groupId,
-      groupName: "기본 Mock 코딩 스터디", // 이름 변경
-      groupTopic: "코딩 스터디",
-      groupDescription: "Flutter, Spring Boot 등 최신 기술을 함께 공부해요.",
-      currentCapacity: 1, // 개설자만 있다고 가정
-      maxCapacity: 5,
-      members: ["개설자(나)"],
-    );
+    // 요청된 그룹 ID에 대한 Mock 데이터가 없는 경우 예외 발생
+    throw Exception("그룹 ID [$groupId]에 대한 상세 Mock 데이터가 없습니다.");
   }
 }
-
 // ------------------------------------------------------------------
 // ⭐️ [수정] TeamManagementScreen 위젯
 // ------------------------------------------------------------------
 class TeamManagementScreen extends StatefulWidget {
   final String groupId;
-  final GroupDetail? initialGroupDetail;
+  final GroupModel? initialGroupDetail;
 
   const TeamManagementScreen({
     super.key,
@@ -106,7 +60,7 @@ class TeamManagementScreen extends StatefulWidget {
 class _TeamManagementScreenState extends State<TeamManagementScreen> {
   final MockGroupService _groupService = MockGroupService();
   bool _isLoading = true;
-  late GroupDetail _groupDetail;
+  GroupModel? _groupDetail;
 
   bool _isNameEditing = false;
   bool _isTopicEditing = false;
@@ -130,25 +84,42 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
 
   // ⭐️ 모임 상세 정보를 서버에서 가져오는 함수 (initialGroupDetail 우선 사용)
   Future<void> _fetchGroupDetail() async {
+    // groupId가 없는 경우 즉시 오류 처리
+    if (widget.groupId.isEmpty) {
+      print("❌ 치명적 오류: groupId가 전달되지 않았습니다.");
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('오류: 모임 ID가 누락되었습니다.')),
+        );
+      }
+      return;
+    }
     try {
-      GroupDetail detail;
+      GroupModel model;
 
       if (widget.initialGroupDetail != null) {
-        detail = widget.initialGroupDetail!;
+        model = widget.initialGroupDetail!;
         print("✅ TeamManagementScreen: 전달받은 초기 데이터로 구성함.");
       } else {
         // Mock API를 호출하는 경우
-        detail = await _groupService.getGroupDetail(widget.groupId);
+        model = await _groupService.getGroupDetail(widget.groupId);
       }
 
+      if (!mounted) return;
       setState(() {
-        _groupDetail = detail;
+        _groupDetail = model;
 
-        _groupName = detail.groupName;
-        _groupTopic = detail.groupTopic;
-        _groupDescription = detail.groupDescription;
+        _groupName = model.groupName;
+
+        // GroupModel의 category (NonNull 가정)
+        _groupTopic = model.category ?? "주제 미정";
+
+        // GroupModel의 description (NonNull 가정)
+        _groupDescription = model.description ?? "";
+
         _members.clear();
-        _members.addAll(detail.members);
+        _members.addAll(model.members);
 
         _groupNameController.text = _groupName;
         _groupTopicController.text = _groupTopic.isNotEmpty ? _groupTopic : "주제 미정";
@@ -158,11 +129,13 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
       });
     } catch (e) {
       print("❌ 그룹 상세 정보 로딩 실패: $e");
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
+        _groupDetail = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('모임 정보를 불러오는 데 실패했습니다.')),
+        SnackBar(content: Text('모임 정보를 불러오는 데 실패했습니다: ${e.toString()}')),
       );
     }
   }
@@ -212,6 +185,13 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
       );
     }
 
+    if (_groupDetail == null) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: Text("모임 정보를 불러올 수 없습니다.")),
+        bottomNavigationBar: CustomBottomNavBar(onTabSelected: (String tag) {  },),
+      );
+    }
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -237,12 +217,20 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
                 color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.grey.shade400, width: 1.5),
+                // ⭐️ GroupModel의 groupImage 필드 사용
+                image: _groupDetail!.groupImage != null
+                    ? DecorationImage(
+                    image: NetworkImage(_groupDetail!.groupImage!),
+                    fit: BoxFit.cover)
+                    : null,
               ),
-              child: Icon(
+              child: _groupDetail!.groupImage == null
+                  ? Icon(
                 Icons.image_outlined,
                 color: Colors.grey[600],
                 size: 50,
-              ),
+              )
+                  : null,
             ),
             const SizedBox(height: 16),
 
@@ -299,7 +287,8 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
                   )
                       :
                   Image.asset(
-                    'assets/images/edit_icon.png',
+                    // 'assets/images/edit_icon.png', // 이미지 경로가 로컬에 없으므로 주석 처리
+                    'assets/images/edit_icon.png', // 이미지 경로 가정
                     width: 20,
                     height: 20,
                   ),
@@ -354,7 +343,7 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
     );
   }
 
-  // ⭐️ 모임 정보 카드 위젯 (상태 변수 연결)
+  // ⭐️ 모임 정보 카드 위젯
   Widget _buildInfoCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -421,7 +410,7 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
     );
   }
 
-  // ⭐️ 정보 카드 내 개별 Row 위젯 (수정/완료 버튼 로직)
+  // ⭐️ 정보 카드 내 개별 Row 위젯
   Widget _buildInfoRow(
       BuildContext context, {
         required String label,
@@ -497,6 +486,7 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
                   )
                       :
                   Image.asset(
+                    // 'assets/images/edit_icon.png', // 이미지 경로 가정
                     'assets/images/edit_icon.png',
                     width: 20,
                     height: 20,
@@ -510,7 +500,7 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
     );
   }
 
-  // ⭐️ 팀원 목록 카드 위젯
+  // ⭐️ 팀원 목록 카드 위젯 (GroupModel 필드명 반영)
   Widget _buildMemberListCard() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -541,7 +531,8 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
                 ),
               ),
               Text(
-                "${_groupDetail.currentCapacity}/${_groupDetail.maxCapacity}",
+                // ⭐️ GroupModel의 필드명 currentMember, maxMember 사용
+                "${_groupDetail!.currentMember}/${_groupDetail!.maxMember}",
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.grey[600],
@@ -549,6 +540,8 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
               ),
             ],
           ),
+
+
           const SizedBox(height: 10),
           Divider(color: Colors.grey[300], thickness: 1),
           const SizedBox(height: 10),
@@ -564,13 +557,14 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
             },
           ),
 
-          ..._members.map((member) => _buildMemberRow(context, memberName: member)).toList(),
+          // ⭐️ GroupModel의 members 리스트 사용
+          ..._groupDetail!.members.map((member) => _buildMemberRow(context, memberName: member)).toList(),
         ],
       ),
     );
   }
 
-  // ⭐️ 팀원 목록의 개별 Row 위젯
+  // ⭐️ 팀원 목록의 개별 Row 위젯 (리더 표시 로직 추가)
   Widget _buildMemberRow(
       BuildContext context, {
         required String memberName,
@@ -578,6 +572,9 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
         bool isInvite = false,
         VoidCallback? onTap,
       }) {
+    // ⭐️ 리더 닉네임 확인
+    final isLeader = memberName == _groupDetail!.leaderNickname;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -588,7 +585,7 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.grey[200],
+                color: isInvite ? const Color(0xFF6B7AA1).withOpacity(0.1) : Colors.grey[200],
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: Colors.grey.shade300),
               ),
@@ -603,14 +600,33 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
               ),
             ),
             const SizedBox(width: 16),
-            Text(
-              memberName,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: isInvite ? FontWeight.bold : FontWeight.normal,
-                color: isInvite ? const Color(0xFF6B7AA1) : Colors.black87,
+            Expanded(
+              child: Text(
+                memberName,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: isInvite || isLeader ? FontWeight.bold : FontWeight.normal,
+                  color: isInvite ? const Color(0xFF6B7AA1) : Colors.black87,
+                ),
               ),
             ),
+            // ⭐️ 리더 태그
+            if (isLeader)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6B7AA1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  "리더",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
           ],
         ),
       ),

@@ -11,7 +11,6 @@ import 'features/auth/screens/find_pw_screen.dart';
 import 'features/lifestyle_test/screens/lifestyle_test_screen.dart';
 import 'features/home/screens/home_screen.dart';
 import 'features/connection/screens/my_group_manage_screen.dart';
-import 'features/group/screens/group_detail_screen.dart';
 import 'package:lifematch_frontend/features/chat/screens/chat_screen.dart';
 import 'package:lifematch_frontend/features/chat/screens/chat_group_detail_screen.dart';
 import 'package:lifematch_frontend/features/chat/screens/chat_personal_detail_screen.dart';
@@ -20,7 +19,6 @@ import 'package:lifematch_frontend/features/profile/screens/edit_profile_screen.
 
 //테스트 임포트
 import 'features/notification/screens/notification_screen.dart';
-import 'features/team_management/screens/team_detail_screen.dart';
 
 void main() {
   runApp(
@@ -62,14 +60,20 @@ class MyApp extends StatelessWidget {
         '/chat-personal-detail': (context) => const ChatPersonalDetailScreen(),
         '/my-profile': (context) => const MyProfileScreen(),
         '/edit-profile': (context) => const EditProfileScreen(),
-        '/invite': (context) => MemberInviteScreen(
-          groupId: "temp-group-id",
-          initialGroupDetail: null,
-          selectedCategory: "category",
-        ),
+        '/invite': (context) {
+          // ⭐️ [수정] settings.arguments에서 실제 groupId를 추출합니다.
+          final groupId = ModalRoute.of(context)!.settings.arguments as String;
 
+          // ⭐️ [수정] 추출한 groupId를 MemberInviteScreen에 전달합니다.
+          //          나머지 필드는 필요하다면 해당 라우트에서 처리하거나,
+          //          MemberInviteScreen의 생성자에 맞게 기본값/널 값을 지정합니다.
+          return MemberInviteScreen(
+            groupId: groupId, // ✅ 실제 그룹 ID 전달
+            initialGroupDetail: null, // 기존대로 유지
+            selectedCategory: "category", // 기존대로 유지
+          );
+        },
       },
-
     );
   }
 }

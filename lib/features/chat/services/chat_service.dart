@@ -79,13 +79,16 @@ class ChatService {
   // ---------------------------------------------------------
   // 3. 메시지 전송
   // ---------------------------------------------------------
-  Future<void> sendMessage(String chatId, String message) async {
+  Future<void> sendMessage(String chatId, String content) async {
     try {
       final headers = await _getHeaders();
 
       await dio.post(
         '/api/chat/$chatId/message',
-        data: {"message": message},
+        data: {
+          "content": content, // ⭐️ [수정] 백엔드 ChatMessageCreate 스키마에 맞게 "content" 사용
+          "attachments": [],  // ⭐️ [추가] attachments 필드도 빈 리스트로 전송
+        },
         options: Options(headers: headers),
       );
 
@@ -110,6 +113,44 @@ class ChatService {
       return response.statusCode == 200;
     } on DioException catch (e) {
       throw Exception(e.response?.data['detail'] ?? "채팅방 나가기 실패");
+    }
+  }
+
+  // ---------------------------------------------------------
+  // 5. 🔥 채팅방 생성 (DM 또는 Group)
+  // ---------------------------------------------------------
+  Future<Map<String, dynamic>> createChatRoom({
+    required String type, // "group" 또는 "dm"
+    String? groupId,
+    List<String>? targetIds, // DM일 경우 상대방의 user_id 목록 (1개)
+  }) async {
+    try {
+      final headers = await _getHeaders();
+
+      // 요청 본문 구성
+      final data = {
+        "type": type,
+        if (groupId != null) "group_id": groupId,
+        if (targetIds != null) "target_ids": targetIds,
+      };
+
+      final response = await dio.post(
+        '/api/chat/create', // ⭐️ 채팅방 생성 엔드포인트
+        data: data,
+        options: Options(headers: headers),
+      );
+
+      final responseData = response.data;
+
+      if (responseData is Map<String, dynamic> && responseData.containsKey('chat_id')) {
+        // 성공 응답 (chat_id, members 등이 포함됨)
+        return responseData;
+      }
+
+      throw Exception("채팅방 생성 응답 오류");
+
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['detail'] ?? "채팅방 생성 실패");
     }
   }
 }

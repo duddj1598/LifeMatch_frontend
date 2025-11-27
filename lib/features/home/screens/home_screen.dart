@@ -83,11 +83,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 카테고리 이동
   void _navigateToTeamDetail(String category) {
+    print("✅ 카테고리 선택: $category. TeamDetailScreen으로 직접 이동하며 인자 전달.");
+    // ⭐️ MaterialPageRoute를 사용하여 TeamDetailScreen으로 이동하며 category 인자 전달
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => TeamDetailScreen(
-          selectedCategory: category,
+          selectedCategory: category, // ⭐️ selectedCategory 필드에 값 전달
         ),
       ),
     );

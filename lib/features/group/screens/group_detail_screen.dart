@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lifematch_frontend/features/team_management/widgets/custom_bottom_nav_bar.dart';
 import 'package:lifematch_frontend/core/services/storage_service.dart';
 import 'package:lifematch_frontend/features/notification/services/notification_service.dart'; // ⭐️ [추가] NotificationService import
+import '../../chat/services/chat_service.dart';
 import '../models/group_model.dart';
 import '../services/group_service.dart'; // GroupService가 getGroupDetail을 제공한다고 가정
 import 'package:http/http.dart' as http;
@@ -44,8 +45,6 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
   late GroupModel _groupDetail;
 
   String? _myUserDocId;
-
-  // ⭐️ [이전 피드백 반영] leaderNickname 상태 변수 삭제 (GroupModel에서 직접 접근)
 
   @override
   void initState() {
@@ -92,6 +91,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
       }
     }
   }
+
   Future<void> _handleApplyJoin() async {
     if (_myUserDocId == null || widget.groupId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -189,7 +189,66 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
     }
   }
 
+  Future<void> _handleInquireChat() async {
+    final chatService = ChatService();
+    print("--- 문의하기 로직 진입 ---");
 
+    // 1. 리더 ID 확인
+    if (!_groupDetail.hasLeaderLoginId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('⚠️ 리더 정보를 찾을 수 없습니다.')),
+      );
+      return;
+    }
+
+    final String leaderLoginId = _groupDetail.leaderId!; // 리더의 로그인 user_id
+    print("리더 Login ID: $leaderLoginId");
+    // 2. ChatService 인스턴스 준비 (ChatPersonalDetailScreen에서 사용한 ChatService와 동일)
+    // 🚨 [필수] GroupService와 별개로, ChatService가 필요합니다.
+    // 현재 import에 ChatService가 없으므로, 추가한다고 가정합니다.
+    // import '../services/chat_service.dart'; // ⭐️ ChatService 임포트 필요
+
+     // ChatService 인스턴스 생성
+
+    try {
+      // 3. 채팅방 생성 API 호출
+      print("API 호출 시작: /api/chat/create");
+      final Map<String, dynamic> result = await chatService.createChatRoom(
+        type: "dm",
+        targetIds: [leaderLoginId], // 리더의 로그인 ID를 상대방으로 지정
+      );
+
+      final String chatId = result['chat_id'];
+      final String roomName = _groupDetail.leaderNickname;
+      final String? myUserDocId = _myUserDocId; // 내 Firestore 문서 ID (필요시)
+
+      if (chatId.isEmpty) {
+        throw Exception("채팅방 ID를 받지 못했습니다.");
+      }
+      print("✅ 채팅방 생성 성공. Chat ID: $chatId");
+      // 4. ChatPersonalDetailScreen으로 이동
+      if (mounted) {
+        // ⭐️ [라우팅] 1:1 채팅 상세 화면으로 이동
+        await Navigator.pushNamed(
+          context,
+          '/chat-personal-detail',
+          arguments: {
+            "chatId": chatId,
+            "roomName": roomName,
+            "myUserDocId": myUserDocId, // 내 문서 ID 전달 (메시지 구분을 위함)
+          },
+        );
+        // 채팅방에서 돌아오면 화면을 갱신할 수 있음 (선택 사항)
+        _fetchGroupDetailsAndUserId();
+      }
+
+    } catch (e) {
+      print("❌ DM 채팅방 생성/이동 오류: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('❌ 문의 채팅방 생성 실패: ${e.toString()}')),
+      );
+    }
+  }
   // --- 4. ⭐️ 색상 정의 (유지) ---
   final Color _borderColor = const Color(0xFF4C6DAF);
   final Color _buttonColor70 = const Color(0xFF4C6DAF).withOpacity(0.7);
@@ -400,10 +459,11 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
               text1: '문의하기',
               text2: '참가신청',
               onPressed1: () {
-                print('문의하기 클릭!');
+                // ⭐️ [연결] 문의하기 로직 연결
+                _handleInquireChat();
               },
               onPressed2: () {
-                // ⭐️ [연결] 참가 신청 로직 연결
+                // 참가 신청 로직 연결
                 _handleApplyJoin();
               },
             ),
