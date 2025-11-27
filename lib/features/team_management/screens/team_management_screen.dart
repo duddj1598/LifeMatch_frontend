@@ -171,7 +171,7 @@ class _TeamManagementScreenState extends State<TeamManagementScreen> {
 
   void _onCompletePressed() {
     print("✅ 소모임 설정 완료 버튼 클릭, MyGroupManageScreen으로 이동");
-    Navigator.pushReplacementNamed(context, '/my-group-manage');
+    Navigator.of(context).popUntil(ModalRoute.withName('/my-group-manage'));
   }
 
   @override
