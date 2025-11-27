@@ -13,7 +13,6 @@ class FindIdScreen extends StatefulWidget {
 
 class _FindIdScreenState extends State<FindIdScreen> {
   final _nicknameController = TextEditingController();
-  final _emailController = TextEditingController();
   final _answerController = TextEditingController();
   final _customQuestionController = TextEditingController();
 
@@ -29,7 +28,6 @@ class _FindIdScreenState extends State<FindIdScreen> {
   @override
   void dispose() {
     _nicknameController.dispose();
-    _emailController.dispose();
     _answerController.dispose();
     _customQuestionController.dispose();
     super.dispose();
@@ -66,19 +64,6 @@ class _FindIdScreenState extends State<FindIdScreen> {
               decoration: const InputDecoration(
                 labelText: '닉네임',
                 hintText: '닉네임을 입력해주세요',
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(borderSide: BorderSide.none),
-              ),
-            ),
-            const SizedBox(height: 15),
-
-            // 이메일 입력
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: '이메일 주소',
-                hintText: '이메일 주소를 입력해주세요',
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(borderSide: BorderSide.none),
@@ -162,7 +147,7 @@ class _FindIdScreenState extends State<FindIdScreen> {
 
                   try {
                     final id = await _authService.findUserId(
-                      email: _emailController.text.trim(),
+                      nickname: _nicknameController.text.trim(),    // ⭐ 변경됨
                       securityQuestion: question,
                       securityAnswer: _answerController.text.trim(),
                     );
