@@ -1,6 +1,10 @@
+// lib/features/team_management/screens/member_invite_screen.dart
+
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:dio/dio.dart'; // ⭐️ Dio import
+import 'package:lifematch_frontend/core/services/api_client.dart' as ApiClient; // ⭐️ ApiClient import
+
 import 'package:lifematch_frontend/features/team_management/screens/team_management_screen.dart';
 import 'package:lifematch_frontend/features/group/models/group_model.dart';
 import 'package:lifematch_frontend/core/services/storage_service.dart';
@@ -32,12 +36,18 @@ class MemberInviteScreen extends StatefulWidget {
 }
 
 class _MemberInviteScreenState extends State<MemberInviteScreen> {
+  // ⭐️ Dio 인스턴스 사용
+  final Dio dio = ApiClient.dio;
+
   final List<TeamMember> _suggestedMembers = [];
   final TextEditingController _searchController = TextEditingController();
   final StorageService _storageService = StorageService();
 
   String _currentQuery = "";
   bool _isLoading = false;
+
+  // ⭐️ 검색된 전체 패널 수를 저장할 변수 추가
+  int _totalSuggestedMembers = 0;
 
   @override
   void dispose() {
@@ -64,73 +74,101 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
     _searchPanelMembers(query);
   }
 
-  // 🔥 패널 검색 API 연동
+  // 🔥 패널 검색 API 연동 (새 응답 구조 반영)
   Future<void> _searchPanelMembers(String query) async {
     if (!mounted) return;
 
     if (query.isEmpty) {
       setState(() {
         _suggestedMembers.clear();
+        _totalSuggestedMembers = 0; // 초기화
       });
       return;
     }
 
     setState(() {
       _isLoading = true;
+      _totalSuggestedMembers = 0; // 로딩 시 초기화
     });
 
-    final url = Uri.parse("http://10.0.2.2:8000/api/panel/search");
+    final String path = "/api/panel/search";
 
     try {
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
+      final response = await dio.post(
+        path,
+        data: {
           "query": query,
           "category": widget.groupDetail.category ?? "",
-        }),
+        },
       );
 
       if (response.statusCode == 200) {
-        final res = jsonDecode(response.body);
+        final Map<String, dynamic> res = response.data;
 
-        // 🔹 2. [수정] 백엔드 응답 구조에 따라 데이터 매핑 수정
-        // 가정: 백엔드가 단순히 ID 리스트만 주는 경우 -> 라이프스타일 정보가 없으므로 "정보 없음" 처리
-        // 만약 백엔드가 객체 리스트([{id: "...", lifestyle: "..."}])를 준다면 코드를 바꿔야 합니다.
-        // 현재 코드 흐름상 idList만 오는 것으로 보입니다.
+        // ⭐️ 1. 최상위 user 객체 정보 추출
+        final Map<String, dynamic>? user = res["user"];
+        final String mainUserId = user?["id"] ?? "NoID";
+        final String mainUserLifestyle = user?["lifestyle"] ?? "정보 없음";
 
-        final List<dynamic> idList = res["id"] ?? [];
-        // ⚠️ 주의: 백엔드에서 검색 결과에 라이프스타일 정보도 같이 보내줘야 정확히 표시 가능합니다.
-        // 현재는 API가 ID만 준다고 가정하고 작성되어 있습니다.
-        // 만약 API가 라이프스타일도 준다면 `res["data"]` 같은 곳에서 꺼내야 합니다.
+        // ⭐️ 2. panel 리스트 및 length 추출
+        final List<dynamic> panelIds = res["panel"] ?? [];
+        final int length = res["length"] ?? 0;
+
+        // ⭐️ 3. TeamMember 리스트 생성
+        final List<TeamMember> newSuggestedMembers = [];
+
+        // ⭐️ 3-1. user 객체의 ID를 첫 번째 항목으로 추가 (우선 표시)
+        if (user != null) {
+          newSuggestedMembers.add(
+            TeamMember(
+              userId: mainUserId,
+              nickname: shorten(mainUserId),
+              lifestyle: mainUserLifestyle,
+            ),
+          );
+        }
+
+        // ⭐️ 3-2. 나머지 panel ID를 추가
+        for (var panelId in panelIds) {
+          if (panelId is String && panelId != mainUserId) { // 중복 방지
+            newSuggestedMembers.add(
+              TeamMember(
+                userId: panelId,
+                nickname: shorten(panelId),
+                // panel ID만 있으므로 라이프스타일은 "정보 없음"으로 표시
+                lifestyle: "라이프스타일 정보 없음",
+              ),
+            );
+          }
+        }
 
         if (!mounted) return;
         setState(() {
           _suggestedMembers.clear();
-          _suggestedMembers.addAll(
-            idList.map((panelId) {
-              return TeamMember(
-                userId: panelId as String,
-                nickname: shorten("$panelId"),
-                // ⚠️ 현재 API 응답에 라이프스타일 데이터가 없다면 임시 텍스트가 나옵니다.
-                // 백엔드 API 응답에 lifestyle 필드가 있다면 `data["lifestyle"]` 처럼 매핑하세요.
-                lifestyle: "라이프스타일 정보 없음",
-              );
-            }),
-          );
+          _suggestedMembers.addAll(newSuggestedMembers);
+          _totalSuggestedMembers = length; // 전체 length 값 저장
         });
       } else {
-        print("❌ API 오류: ${response.body}");
+        print("❌ API 오류: ${response.statusCode}");
         if (!mounted) return;
         setState(() {
           _suggestedMembers.clear();
+          _totalSuggestedMembers = 0;
         });
       }
-    } catch (e) {
-      print("❌ 네트워크 오류: $e");
+    } on DioException catch (e) {
+      print("❌ Dio 오류: ${e.response?.data}");
       if (!mounted) return;
       setState(() {
         _suggestedMembers.clear();
+        _totalSuggestedMembers = 0;
+      });
+    } catch (e) {
+      print("❌ 네트워크/파싱 오류: $e");
+      if (!mounted) return;
+      setState(() {
+        _suggestedMembers.clear();
+        _totalSuggestedMembers = 0;
       });
     } finally {
       if (mounted) {
@@ -141,9 +179,9 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
     }
   }
 
-  // 🔥 초대 API 호출 함수
+  // 🔥 초대 API 호출 함수 (변경 없음)
   Future<bool> _sendInvite(String targetUserId) async {
-    const url = "http://10.0.2.2:8000/api/group-action/invite";
+    const String path = "/api/group-action/invite";
     final String? accessToken = await _storageService.getToken();
 
     if (accessToken == null || accessToken.isEmpty) {
@@ -154,33 +192,37 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
     }
 
     try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $accessToken",
-        },
-        body: jsonEncode({
+      final response = await dio.post(
+        path,
+        options: Options(
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $accessToken",
+          },
+        ),
+        data: {
           "group_id": widget.groupDetail.id,
           "user_id": targetUserId
-        }),
+        },
       );
 
       if (response.statusCode == 200) {
-        final res = jsonDecode(response.body);
+        final res = response.data;
         print("✅ 초대 성공: ${res['message']}");
         return true;
       } else {
-        final errorBody = jsonDecode(response.body);
-        final detail = errorBody['detail'] ?? "초대 요청 처리 실패";
-        print("❌ 초대 API 오류: $detail");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("초대 실패: $detail")),
-        );
-        return false;
+        throw Exception("초대 요청 처리 실패: Status ${response.statusCode}");
       }
+    } on DioException catch (e) {
+      final errorBody = e.response?.data;
+      final detail = errorBody?['detail'] ?? "초대 요청 처리 실패";
+      print("❌ 초대 API 오류: $detail");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("초대 실패: $detail")),
+      );
+      return false;
     } catch (e) {
-      print("❌ 네트워크/파싱 오류: $e");
+      print("❌ 알 수 없는 오류: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("네트워크 오류가 발생했습니다.")),
       );
@@ -210,6 +252,9 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
     );
   }
 
+  // ----------------------------------------------------------------
+  // ⭐️ UI 빌드 함수 수정: 검색 결과 수 표시 (_totalSuggestedMembers)
+  // ----------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -248,10 +293,13 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
 
             const SizedBox(height: 20),
 
+            // ⭐️ 수정된 부분: length 값 표시
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                '${widget.groupDetail.groupName}에 어울리는 팀원이에요!',
+                _totalSuggestedMembers > 0
+                    ? '${widget.groupDetail.groupName}에 어울리는 팀원 ${_totalSuggestedMembers}명이에요!'
+                    : '${widget.groupDetail.groupName}에 어울리는 팀원이 없습니다.',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
@@ -332,7 +380,7 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
     );
   }
 
-  // ✔ 3. [수정] 팀원 카드 UI: 관심사 -> 라이프 스타일 표시
+  // ✔ 3. [수정] 팀원 카드 UI: 관심사 -> 라이프 스타일 표시 (변경 없음)
   Widget _buildTeamMemberCard(TeamMember member) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),

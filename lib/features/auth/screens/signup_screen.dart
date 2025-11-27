@@ -1,8 +1,14 @@
+// lib/features/auth/screens/signup_screen.dart
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+// ⭐️ Dio 관련 import 추가
+import 'package:dio/dio.dart';
+// ⭐️ ApiClient import
+import 'package:lifematch_frontend/core/services/api_client.dart' as ApiClient;
+
 import 'package:lifematch_frontend/features/auth/viewmodels/auth_viewmodel.dart';
 import 'package:lifematch_frontend/core/constants/security_questions.dart';
 
@@ -14,7 +20,10 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-  // --- 컨트롤러 ---
+  // ⭐️ Dio 인스턴스 사용
+  final Dio dio = ApiClient.dio;
+
+  // ... (기존 컨트롤러 및 상태 변수 정의는 그대로 유지) ...
   final _idController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -60,7 +69,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   // --------------------------------------------------
-  // ⭐ 비밀번호 재확인 로직
+  // ⭐ 비밀번호 재확인 로직 (변경 없음)
   // --------------------------------------------------
   void _validateConfirmPassword() {
     final password = _passwordController.text;
@@ -87,16 +96,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
-    // ⭐️ 백엔드 URL과 엔드포인트
-    final url = Uri.parse("http://10.0.2.2:8000/api/auth/check/id?user_id=$id");
+    // ⭐️ Dio를 사용하도록 변경. BaseUrl은 ApiClient에서 자동 적용됨.
+    final String path = "/api/auth/check/id";
 
     setState(() {
       _idError = null; // 요청 전에 에러 초기화
-      // _isLoading = true; // 필요하다면 로딩 상태 추가 가능 (현재는 생략)
+      _isIdChecked = false; // 재검사 시 플래그 초기화
     });
 
     try {
-      final response = await http.get(url);
+      // ⭐️ Dio GET 요청: 쿼리 파라미터로 user_id 전달
+      final response = await dio.get(
+        path,
+        queryParameters: {'user_id': id},
+      );
 
       if (!mounted) return;
 
@@ -109,32 +122,38 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("사용 가능한 아이디입니다."), backgroundColor: Colors.green),
         );
-      } else if (response.statusCode == 409) {
+      } else {
+        // Dio는 4xx/5xx 상태 코드를 DioException으로 던지므로, 
+        // 200 이외의 응답은 이곳에서 처리할 필요가 거의 없음. (일반적으로 catch 블록으로 이동)
+      }
+
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isIdChecked = false;
+      });
+
+      if (e.response?.statusCode == 409) {
         // 409 Conflict: 중복
-        final errorBody = jsonDecode(utf8.decode(response.bodyBytes));
-        final detail = errorBody['detail'] ?? "이미 사용 중인 아이디입니다.";
+        final errorBody = e.response?.data;
+        final detail = errorBody?['detail'] ?? "이미 사용 중인 아이디입니다.";
         setState(() {
           _idError = detail;
-          _isIdChecked = false;
         });
       } else {
-        // 기타 오류 처리 (예: 422 Validation Error)
+        // 기타 오류 처리 (예: 422, 네트워크 오류 등)
         setState(() {
           _idError = "확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
         });
-        print("❌ 아이디 확인 API 오류: ${response.statusCode}, ${response.body}");
+        print("❌ 아이디 확인 API 오류: ${e.response?.statusCode}, ${e.message}");
       }
-
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _idError = "네트워크 오류가 발생했습니다.";
+        _idError = "알 수 없는 오류가 발생했습니다.";
       });
-      print("❌ 네트워크 오류: $e");
+      print("❌ 알 수 없는 오류: $e");
     }
-    // finally {
-    //   if (mounted) setState(() => _isLoading = false);
-    // }
   }
 
   // --------------------------------------------------
@@ -151,16 +170,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
-    // ⭐️ 백엔드 URL과 엔드포인트
-    final url = Uri.parse("http://10.0.2.2:8000/api/auth/check/nickname?nickname=$nickname");
+    // ⭐️ Dio를 사용하도록 변경. BaseUrl은 ApiClient에서 자동 적용됨.
+    final String path = "/api/auth/check/nickname";
 
     setState(() {
       _nicknameError = null; // 요청 전에 에러 초기화
-      // _isLoading = true; // 필요하다면 로딩 상태 추가 가능
+      _isNicknameChecked = false; // 재검사 시 플래그 초기화
     });
 
     try {
-      final response = await http.get(url);
+      // ⭐️ Dio GET 요청: 쿼리 파라미터로 nickname 전달
+      final response = await dio.get(
+        path,
+        queryParameters: {'nickname': nickname},
+      );
 
       if (!mounted) return;
 
@@ -173,33 +196,35 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("사용 가능한 닉네임입니다."), backgroundColor: Colors.green),
         );
-      } else if (response.statusCode == 409) {
+      }
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isNicknameChecked = false;
+      });
+
+      if (e.response?.statusCode == 409) {
         // 409 Conflict: 중복
-        final errorBody = jsonDecode(utf8.decode(response.bodyBytes));
-        final detail = errorBody['detail'] ?? "이미 사용 중인 닉네임입니다.";
+        final errorBody = e.response?.data;
+        final detail = errorBody?['detail'] ?? "이미 사용 중인 닉네임입니다.";
         setState(() {
           _nicknameError = detail;
-          _isNicknameChecked = false; // ⭐️ 실패 시 플래그 False
         });
       } else {
-        // 기타 오류 처리 (예: 422 Validation Error)
+        // 기타 오류 처리
         setState(() {
           _nicknameError = "확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
-          _isNicknameChecked = false;
         });
-        print("❌ 닉네임 확인 API 오류: ${response.statusCode}, ${response.body}");
+        print("❌ 닉네임 확인 API 오류: ${e.response?.statusCode}, ${e.message}");
       }
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _nicknameError = "네트워크 오류가 발생했습니다.";
+        _nicknameError = "알 수 없는 오류가 발생했습니다.";
         _isNicknameChecked = false;
       });
-      print("❌ 네트워크 오류: $e");
+      print("❌ 알 수 없는 오류: $e");
     }
-    // finally {
-    //   if (mounted) setState(() => _isLoading = false);
-    // }
   }
 
   // --------------------------------------------------
@@ -217,17 +242,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     final email = "${_emailIdController.text.trim()}@${_emailDomainController.text.trim()}";
 
-    // ⭐️ 백엔드 URL과 엔드포인트
-    // URL 인코딩을 사용하여 '@' 및 기타 특수 문자가 안전하게 전달되도록 합니다.
-    final encodedEmail = Uri.encodeComponent(email);
-    final url = Uri.parse("http://10.0.2.2:8000/api/auth/check/email?email=$encodedEmail");
+    // ⭐️ Dio를 사용하도록 변경. BaseUrl은 ApiClient에서 자동 적용됨.
+    final String path = "/api/auth/check/email";
 
     setState(() {
       _emailError = null; // 요청 전에 에러 초기화
+      _isEmailChecked = false; // 재검사 시 플래그 초기화
     });
 
     try {
-      final response = await http.get(url);
+      // ⭐️ Dio GET 요청: 쿼리 파라미터로 email 전달
+      final response = await dio.get(
+        path,
+        queryParameters: {'email': email},
+      );
 
       if (!mounted) return;
 
@@ -240,32 +268,38 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("사용 가능한 이메일입니다."), backgroundColor: Colors.green),
         );
-      } else if (response.statusCode == 409) {
+      }
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isEmailChecked = false;
+      });
+
+      if (e.response?.statusCode == 409) {
         // 409 Conflict: 중복
-        final errorBody = jsonDecode(utf8.decode(response.bodyBytes));
-        // 백엔드가 상세 메시지를 제공한다면 사용, 아니면 기본 메시지 사용
-        final detail = errorBody['detail'] ?? "이미 사용 중인 이메일입니다.";
+        final errorBody = e.response?.data;
+        final detail = errorBody?['detail'] ?? "이미 사용 중인 이메일입니다.";
         setState(() {
           _emailError = detail;
-          _isEmailChecked = false;
         });
       } else {
-        // 기타 오류 처리 (예: 422 Validation Error)
+        // 기타 오류 처리
         setState(() {
           _emailError = "확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
-          _isEmailChecked = false;
         });
-        print("❌ 이메일 확인 API 오류: ${response.statusCode}, ${response.body}");
+        print("❌ 이메일 확인 API 오류: ${e.response?.statusCode}, ${e.message}");
       }
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _emailError = "네트워크 오류가 발생했습니다.";
+        _emailError = "알 수 없는 오류가 발생했습니다.";
         _isEmailChecked = false;
       });
-      print("❌ 네트워크 오류: $e");
+      print("❌ 알 수 없는 오류: $e");
     }
   }
+
+  // ... (나머지 _handleSubmit, _buildInputDecoration, Widget build 함수들은 변경 없음)
 
   // --------------------------------------------------
   // ⭐ 회원가입 처리
@@ -708,35 +742,35 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ),
       child: Column(
         children: [
-           Expanded(
+          Expanded(
             child: SingleChildScrollView(
               child: Text(
                 'I. 서비스 이용 약관 (필수 동의)\n'
-                '제1조 (목적 및 정의)\n'
-                '본 약관은 [서비스 이름] (이하 회사)이 제공하는 소모임 연결 및 라이프스타일 매칭 서비스 (이하 서비스)의 이용 조건 및 절차, 회사와 회원 간의 권리, 의무 및 책임 사항을 규정함을 목적으로 합니다.\n'
-                '제2조 (회원가입 및 이용 제한)\n'
-                '회원가입: 이용자는 본 약관에 동의하고 회사가 정한 절차에 따라 필수 정보를 제공하여 회원가입을 신청하며, 회사는 이를 승낙함으로써 이용 계약이 성립됩니다.\n'
-                '이용 제한: 만 14세 미만인 자의 가입은 제한됩니다. 회원은 가입 시 제공한 모든 정보(닉네임, 이메일 등)가 사실임을 보장해야 하며, 허위 정보를 기재한 경우 서비스 이용이 제한되거나 회원 자격이 상실될 수 있습니다.\n'
-                '제3조 (서비스 내용 및 의무)\n'
-                '서비스 제공: 회사는 소모임 생성/가입, 커뮤니티 활동 지원, 라이프스타일 분석에 기반한 맞춤형 활동 및 회원 추천 등의 서비스를 제공합니다.\n'
-                '회원의 의무: 회원은 본 약관 및 관련 법령을 준수해야 하며, 타인 정보 도용, 서비스의 영리 목적 이용, 불법 게시물 작성 등 서비스 운영을 방해하는 행위는 엄격히 금지됩니다.\n'
-                '제4조 (게시물의 관리 및 저작권)\n'
-                '게시물 관리: 회원이 서비스 내에 게시하거나 등록한 내용이 타인의 권리를 침해하거나 서비스 목적에 부합하지 않는 경우, 회사는 이를 사전 통보 없이 삭제, 이동, 또는 접근을 차단할 수 있습니다.\n'
-                '게시물 책임: 게시물에 대한 책임은 해당 내용을 등록한 회원 본인에게 있습니다.\n'
-                '제5조 (계약 해지 및 탈퇴)\n'
-                '회원은 언제든지 서비스 내 탈퇴 절차를 통해 자유롭게 이용 계약을 해지(탈퇴)할 수 있습니다. 회사는 회원의 탈퇴 요청 시 관련 법령이 정한 바에 따라 정보를 처리합니다.\n'
-                'II. 개인정보 수집 및 이용 동의 (필수 동의)'
-                '회사는 개인정보 보호법에 따라 다음과 같이 개인정보를 수집 및 이용하며, 회원의 권리를 보호합니다.'
+                    '제1조 (목적 및 정의)\n'
+                    '본 약관은 [서비스 이름] (이하 회사)이 제공하는 소모임 연결 및 라이프스타일 매칭 서비스 (이하 서비스)의 이용 조건 및 절차, 회사와 회원 간의 권리, 의무 및 책임 사항을 규정함을 목적으로 합니다.\n'
+                    '제2조 (회원가입 및 이용 제한)\n'
+                    '회원가입: 이용자는 본 약관에 동의하고 회사가 정한 절차에 따라 필수 정보를 제공하여 회원가입을 신청하며, 회사는 이를 승낙함으로써 이용 계약이 성립됩니다.\n'
+                    '이용 제한: 만 14세 미만인 자의 가입은 제한됩니다. 회원은 가입 시 제공한 모든 정보(닉네임, 이메일 등)가 사실임을 보장해야 하며, 허위 정보를 기재한 경우 서비스 이용이 제한되거나 회원 자격이 상실될 수 있습니다.\n'
+                    '제3조 (서비스 내용 및 의무)\n'
+                    '서비스 제공: 회사는 소모임 생성/가입, 커뮤니티 활동 지원, 라이프스타일 분석에 기반한 맞춤형 활동 및 회원 추천 등의 서비스를 제공합니다.\n'
+                    '회원의 의무: 회원은 본 약관 및 관련 법령을 준수해야 하며, 타인 정보 도용, 서비스의 영리 목적 이용, 불법 게시물 작성 등 서비스 운영을 방해하는 행위는 엄격히 금지됩니다.\n'
+                    '제4조 (게시물의 관리 및 저작권)\n'
+                    '게시물 관리: 회원이 서비스 내에 게시하거나 등록한 내용이 타인의 권리를 침해하거나 서비스 목적에 부합하지 않는 경우, 회사는 이를 사전 통보 없이 삭제, 이동, 또는 접근을 차단할 수 있습니다.\n'
+                    '게시물 책임: 게시물에 대한 책임은 해당 내용을 등록한 회원 본인에게 있습니다.\n'
+                    '제5조 (계약 해지 및 탈퇴)\n'
+                    '회원은 언제든지 서비스 내 탈퇴 절차를 통해 자유롭게 이용 계약을 해지(탈퇴)할 수 있습니다. 회사는 회원의 탈퇴 요청 시 관련 법령이 정한 바에 따라 정보를 처리합니다.\n'
+                    'II. 개인정보 수집 및 이용 동의 (필수 동의)'
+                    '회사는 개인정보 보호법에 따라 다음과 같이 개인정보를 수집 및 이용하며, 회원의 권리를 보호합니다.'
 
-                '1. 수집 및 이용 목적\n'
-                '회원 식별 및 서비스 제공: 회원 식별, 소모임 가입 및 활동, 채팅 기능 제공, 고지사항 전달.\n'
-                '라이프스타일 매칭 및 추천: 수집된 라이프스타일 정보를 분석하여 맞춤형 소모임 및 회원 추천, 활동 지역 설정 지원.\n'
-                '법적 의무 이행: 부정 이용 방지, 민원 및 분쟁 처리.\n'
+                    '1. 수집 및 이용 목적\n'
+                    '회원 식별 및 서비스 제공: 회원 식별, 소모임 가입 및 활동, 채팅 기능 제공, 고지사항 전달.\n'
+                    '라이프스타일 매칭 및 추천: 수집된 라이프스타일 정보를 분석하여 맞춤형 소모임 및 회원 추천, 활동 지역 설정 지원.\n'
+                    '법적 의무 이행: 부정 이용 방지, 민원 및 분쟁 처리.\n'
 
-                '2. 수집 항목 및 보유 기간\n'
-                '닉네임, 이메일 주소, 비밀번호, 휴대폰 번호(인증 시), 프로필 이미지 : 회원 탈퇴 시 즉시 파기 또는 법령에 따른 의무 보존 기간\n'
+                    '2. 수집 항목 및 보유 기간\n'
+                    '닉네임, 이메일 주소, 비밀번호, 휴대폰 번호(인증 시), 프로필 이미지 : 회원 탈퇴 시 즉시 파기 또는 법령에 따른 의무 보존 기간\n'
                     '생년월일 및 성별 (매칭 정확도 향상), 관심사 카테고리, 거주지(시/구 단위) : 회원 탈퇴 시 즉시 파기\n'
-                'IP 주소, 서비스 이용 기록, 접속 기기 정보 : 3년(통신 비밀 보호법에 따름)\n'
+                    'IP 주소, 서비스 이용 기록, 접속 기기 정보 : 3년(통신 비밀 보호법에 따름)\n'
 
                 ,style: TextStyle(fontSize: 13),
               ),
