@@ -46,7 +46,7 @@ class _LoadingPopupContent extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // ⭐️ 3. 회전하는 커스텀 로딩 스피너
-          const _LoadingSpinner(size: 80.0), // 스피너 크기
+          const LoadingSpinner(size: 80.0), // 스피너 크기
           const SizedBox(height: 28),
           Text(
             "$nickname님의 취향을 파악 중 입니다.",
@@ -74,19 +74,19 @@ class _LoadingPopupContent extends StatelessWidget {
 }
 
 // --- ⭐️ 3. (핵심) 커스텀 로딩 스피너 애니메이션 위젯 ⭐️ ---
-class _LoadingSpinner extends StatefulWidget {
+class LoadingSpinner extends StatefulWidget {
   final double size;
   // ⭐️ 요청하신 색상 정의: 4C6DAF 100%
   static const Color baseColor = Color(0xFF4C6DAF);
 
-  const _LoadingSpinner({this.size = 80.0});
+  const LoadingSpinner({this.size = 80.0});
 
   @override
-  State<_LoadingSpinner> createState() => _LoadingSpinnerState();
+  State<LoadingSpinner> createState() => LoadingSpinnerState();
 }
 
 // ⭐️ SingleTickerProviderStateMixin을 사용하여 애니메이션 컨트롤러 생성
-class _LoadingSpinnerState extends State<_LoadingSpinner>
+class LoadingSpinnerState extends State<LoadingSpinner>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
@@ -134,7 +134,7 @@ class _LoadingSpinnerState extends State<_LoadingSpinner>
                   height: dotSize,
                   decoration: BoxDecoration(
                     // ⭐️ 4. 요청하신 옅어지는 색상 적용
-                    color: _LoadingSpinner.baseColor.withOpacity(opacity),
+                    color: LoadingSpinner.baseColor.withOpacity(opacity),
                     shape: BoxShape.circle,
                   ),
                 ),
