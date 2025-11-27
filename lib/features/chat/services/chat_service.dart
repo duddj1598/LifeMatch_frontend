@@ -120,22 +120,21 @@ class ChatService {
   // 5. 🔥 채팅방 생성 (DM 또는 Group)
   // ---------------------------------------------------------
   Future<Map<String, dynamic>> createChatRoom({
-    required String type, // "group" 또는 "dm"
+    required String type,
     String? groupId,
-    List<String>? targetIds, // DM일 경우 상대방의 user_id 목록 (1개)
+    required List<String> targetIds,
   }) async {
     try {
       final headers = await _getHeaders();
 
-      // 요청 본문 구성
       final data = {
         "type": type,
-        if (groupId != null) "group_id": groupId,
-        if (targetIds != null) "target_ids": targetIds,
+        "group_id": groupId,      // ⭐ Swagger 요구사항: null도 허용
+        "target_ids": targetIds,  // ⭐ DM이면 1개만 보내면 됨
       };
 
       final response = await dio.post(
-        '/api/chat/create', // ⭐️ 채팅방 생성 엔드포인트
+        '/api/chat/create',
         data: data,
         options: Options(headers: headers),
       );
@@ -143,7 +142,6 @@ class ChatService {
       final responseData = response.data;
 
       if (responseData is Map<String, dynamic> && responseData.containsKey('chat_id')) {
-        // 성공 응답 (chat_id, members 등이 포함됨)
         return responseData;
       }
 

@@ -215,6 +215,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
       print("API 호출 시작: /api/chat/create");
       final Map<String, dynamic> result = await chatService.createChatRoom(
         type: "dm",
+        groupId: null,
         targetIds: [leaderLoginId], // 리더의 로그인 ID를 상대방으로 지정
       );
 
