@@ -80,23 +80,23 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
     _searchPanelMembers(query);
   }
 
-  @override
-  void initState() {
-    super.initState();
-    // 로드된 후 한 번만 _performSearch()를 호출
-
-    // 1. 검색 컨트롤러에 그룹 카테고리를 초기 검색어로 설정
-    _searchController.text = widget.groupDetail.category ?? '';
-
-    // 2. 초기 검색 시작 플래그 설정
-    _initialSearchCompleted = false;
-
-    // 3. 프레임이 그려진 후 검색을 실행
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _performSearch();
-    });
-
-  }
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   // 로드된 후 한 번만 _performSearch()를 호출
+  //
+  //   // 1. 검색 컨트롤러에 그룹 카테고리를 초기 검색어로 설정
+  //   _searchController.text = widget.groupDetail.category ?? '';
+  //
+  //   // 2. 초기 검색 시작 플래그 설정
+  //   _initialSearchCompleted = false;
+  //
+  //   // 3. 프레임이 그려진 후 검색을 실행
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     _performSearch();
+  //   });
+  //
+  // }
 
   // --------------------------------------------------
 // 🔥 1:1 채팅방 ID 조회/생성 및 화면 이동
@@ -400,22 +400,22 @@ class _MemberInviteScreenState extends State<MemberInviteScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: _isLoading
-                  ? const Center(
+                    ? const Center(
                   child: LoadingSpinner(size: 80.0),
                 )
                     :_suggestedMembers.isEmpty && _currentQuery.isEmpty
-                  ? const Center(
+                    ? const Center(
                   // ⭐️ 검색 전 초기 상태
                   child: Text(
                     "닉네임 또는 키워드를 검색하여 팀원을 찾아보세요.",
                     style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                 )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(8.0),
-                    itemCount: _suggestedMembers.length,
-                    itemBuilder: (context, index) {
-                      return _buildTeamMemberCard(_suggestedMembers[index]);
+                    : ListView.builder(
+                  padding: const EdgeInsets.all(8.0),
+                  itemCount: _suggestedMembers.length,
+                  itemBuilder: (context, index) {
+                    return _buildTeamMemberCard(_suggestedMembers[index]);
                   },
                 ),
               ),
