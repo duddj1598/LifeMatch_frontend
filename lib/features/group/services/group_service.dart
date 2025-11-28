@@ -83,7 +83,7 @@ class GroupService {
         'group_name': groupName,
         'description': description,
         'category': category,
-        'capacity': capacity,
+        'max_member': capacity,
         'location': location,
         // 'image_url': imageUrl, // 서버 모델에 따라 필드명 조정 필요
       };
